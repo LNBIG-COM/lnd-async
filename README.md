@@ -149,7 +149,7 @@ await client.sendOnionMessage({ peer, onion }); // added in 0.21
 client.sendPaymentSync;                         // undefined: removed in 0.21
 ```
 
-Without `lndVersion` the default line is used, so existing code works as before. The default changes only in a new major version of `lnd-async`. The list of lines is available as `lnd.supportedLndVersions`, the default as `lnd.defaultLndVersion`.
+Without `lndVersion` the default line is used, so existing code works as before. New lines are added in minor versions of `lnd-async` (5.1.0, 5.2.0, ...) and never change the default; the default line changes only in a new major version, because a newer LND line may remove RPCs and fields. **Pass `lndVersion` explicitly** to make your code independent of the default. The list of lines is available as `lnd.supportedLndVersions`, the default as `lnd.defaultLndVersion`.
 
 A full version string is accepted as well (`'0.21.5-beta'`, `'v0.21.5-beta'` or the `version` returned by `getInfo`), so the protos can follow the node:
 
@@ -218,10 +218,13 @@ Sent back unconverted, every such key becomes 0 (strict mode rejects it instead)
 
 ## Versions
 
-- 4.4.0 - TypeScript declarations for all services and messages,
+- 5.0.0 - TypeScript declarations for all services and messages,
           bundled protos of LND 0.18, 0.19, 0.20 and 0.21 with the `lndVersion` option of `.connect()` (default: 0.20, as before),
           opt-in `strict` validation of requests,
-          `deleteMacaroonID` and `registerRPCMiddleware` are now available on the client (they were missing because of their capital letters)
+          `deleteMacaroonID` and `registerRPCMiddleware` are now available on the client (they were missing because of their capital letters),
+          requires Node.js 12.10 or newer (as `@grpc/grpc-js` does).
+          A major version because it is the first npm release after 4.2.2: it brings the move from `grpc` to `@grpc/grpc-js` (4.2.4)
+          and the newer LND protos of 4.2.3 and 4.3.1, and TypeScript projects now get type checking of their calls
 - 4.3.1 - Updated the protocol in accordance with LND v0.20.6-beta,
           the npm package now contains only `lib/` (plus `README.md`, `LICENSE`, `package.json`)
 - 4.2.4 - Migrated from `grpc` to `@grpc/grpc-js`, added `noCert` option to `.connect()`, updated real-connection tests to avoid dangerous LND commands

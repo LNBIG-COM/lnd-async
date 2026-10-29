@@ -1,6 +1,6 @@
 {
   "name": "lnd-async",
-  "version": "4.4.0",
+  "version": "5.0.0",
   "description": "Lightning Network Daemon (LND) gRPC client with native promise support",
   "keywords": [
     "lnd",
@@ -19,7 +19,7 @@
     "lib"
   ],
   "engines": {
-    "node": ">= 10.0.0"
+    "node": ">= 12.10.0"
   },
   "directories": {
     "lib": "lib"
