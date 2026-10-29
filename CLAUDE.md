@@ -16,7 +16,7 @@ npx mocha test/lnd-async.spec.js -r dotenv/config -g getInfo # single test by na
 
 - **Tests hit a real LND node.** There are no mocks; `test/lnd-async.spec.js` connects using `LND_ASYNC_TEST_LND_HOST`, `_LND_PORT`, `_MACAROON` (base64), `_MACAROON_PATH`, `_CERT` (base64), `_CERT_PATH`, `_NO_CERT=true` from a git-ignored `.env` (loaded via `-r dotenv/config`). Unset values fall back to the library defaults (`localhost:10009`, OS-default `~/.lnd` paths).
 - Tests only check that unary methods return a Promise and stream methods return a stream (with a 500 ms deadline / 200 ms cancel). The method list is deliberately limited to read-only calls; **never add methods that change node state** (send, open/close channel, settle, etc.) because the suite runs against a live node.
-- No `lint` script. `npx eslint lib test` currently fails to parse `lib/common.js` (object spread) and `lib/generate-all-api-object.js` (top-level `for await`) because `.eslintrc` pins `ecmaVersion: 8`.
+- No `lint` script. `npx eslint lib test` currently fails to parse `lib/common.js` (object spread) and `lib/generate-all-api-object.js` (`for await`) because `.eslintrc` pins `ecmaVersion: 8`.
 - Style (`.prettierrc`, `.eslintrc`): 2 spaces, single quotes, semicolons, width 100. `lib/generate-all-api-object.js` is a dev script and does not follow this.
 
 ## Architecture
@@ -30,7 +30,7 @@ The call path is `lnd-async.js` → `lnd-rpc.js` → generated `all-api.js` + th
   - `client.lnrpc`: the raw grpc-js clients (`services` for the legacy three, `allServices` for all).
   - Unary RPCs are `promisify`-ed; server-streaming RPCs are returned bound but unwrapped (caller gets a grpc stream). Method names are lowerCamelCase.
 - **`lib/common.js`** derives the lookup sets (`streamApis`/`callbackApis` for the flat surface, `allStreamApi`/`allCallbackApi` keyed `Service.method`) from `all-api.js`. A method that is not listed in `all-api.js` is **silently absent** from the wrapped client, and stream vs. promise is decided by this list, not by grpc metadata.
-- **`lib/all-api.js` is generated, do not hand-edit.** `lib/generate-all-api-object.js` regex-parses each `.proto` for `package`, `service` and `rpc X (...) returns (stream ...)` (handles a signature split over two lines). Keys are paths relative to `original-lnd-protos/` (e.g. `routerrpc/router.proto`). It assumes **one service per proto file** (throws otherwise) and drops files without a service (e.g. `lnclipb/lncli.proto`).
+- **`lib/all-api.js` is generated, do not hand-edit.** `lib/generate-all-api-object.js` regex-parses each `.proto` for `package`, `service` and `rpc X (...) returns (stream ...)` (handles a signature split over two lines). Keys are paths relative to `original-lnd-protos/` (e.g. `routerrpc/router.proto`), walked in sorted order so the output is deterministic and its diff shows only API changes. It assumes **one service per proto file** (throws otherwise) and drops files without a service (e.g. `lnclipb/lncli.proto`).
 
 ## Updating to a new LND version
 
