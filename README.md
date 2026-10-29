@@ -134,7 +134,7 @@ async function getInfo() {
 
 - 4.3.1 - Updated the protocol in accordance with LND v0.20.6-beta,
           the npm package now contains only `lib/` (plus `README.md`, `LICENSE`, `package.json`)
-- 4.3.0 - Migrated from `grpc` to `@grpc/grpc-js`, added `noCert` option to `.connect()`, updated real-connection tests to avoid dangerous LND commands
+- 4.2.4 - Migrated from `grpc` to `@grpc/grpc-js`, added `noCert` option to `.connect()`, updated real-connection tests to avoid dangerous LND commands
 - 4.2.3 - Updated the protocol in accordance with LND v0.18.5-beta
 - 4.2.2 - Updated the protocol in accordance with LND v0.18.0-beta
 - 4.2.1 - Updated the protocol in accordance with LND v0.17.0-beta
