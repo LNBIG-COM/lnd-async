@@ -4,41 +4,55 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-`lnd-async` is a small npm library: a promise-based gRPC client for the Lightning Network Daemon (LND), built on `@grpc/grpc-js` + `@grpc/proto-loader`. There is no build step; `lib/` is shipped as-is (`main: lib/lnd-async`). The README states which LND version the bundled protos match.
+`lnd-async` is a small npm library: a promise-based gRPC client for the Lightning Network Daemon (LND), built on `@grpc/grpc-js` + `@grpc/proto-loader`. There is no build step; `lib/` is shipped as-is (`main: lib/lnd-async`, `types: lib/lnd-async.d.ts`). It bundles the protos of several LND release lines (listed in `lib/versions.js`), ships TypeScript declarations generated from them, and has an opt-in strict request validation.
 
 ## Commands
 
 ```bash
 npm install
-npm test                                                     # mocha test/**/*.js -r dotenv/config
-npx mocha test/lnd-async.spec.js -r dotenv/config -g getInfo # single test by name
+npm test                       # mocha "test/**/*.spec.js" -r dotenv/config && tsc -p test/types
+npm run test:types             # only the compile-time checks of the declarations
+npm run generate-types         # regenerate lib/types/*.d.ts after changing protos or the generator
+npx mocha test/offline.spec.js -g strict    # single file / tests by name
 ```
 
-- **Tests hit a real LND node.** There are no mocks; `test/lnd-async.spec.js` connects using `LND_ASYNC_TEST_LND_HOST`, `_LND_PORT`, `_MACAROON` (base64), `_MACAROON_PATH`, `_CERT` (base64), `_CERT_PATH`, `_NO_CERT=true` from a git-ignored `.env` (loaded via `-r dotenv/config`). Unset values fall back to the library defaults (`localhost:10009`, OS-default `~/.lnd` paths).
-- Tests only check that unary methods return a Promise and stream methods return a stream (with a 500 ms deadline / 200 ms cancel). The method list is deliberately limited to read-only calls; **never add methods that change node state** (send, open/close channel, settle, etc.) because the suite runs against a live node.
+- `test/lnd-async.spec.js` hits a **real LND node** configured by `LND_ASYNC_TEST_LND_HOST`, `_LND_PORT`, `_MACAROON` (base64), `_MACAROON_PATH`, `_CERT` (base64), `_CERT_PATH`, `_NO_CERT=true` from a git-ignored `.env` (loaded via `-r dotenv/config`). It only checks that unary methods return a Promise and stream methods a stream, and passes even when the calls fail. Its method list is deliberately limited to read-only calls; **never add methods that change node state** (send, open/close channel, settle, etc.).
+- `test/offline.spec.js` runs against a local grpc-js server (`test/helpers/mock-lnd.js`, TLS with a throwaway certificate made by `openssl`; the suite is skipped without `openssl`). This is where end-to-end behaviour, `lndVersion` and strict mode are tested.
+- `test/types-runtime.spec.js` checks the generated declarations against what protobufjs 6 really decodes (every message of every line) and fails when `lib/types/` is out of date.
+- `test/types/*.ts` are compile-only checks; lines marked `@ts-expect-error` must fail to compile.
+- Keep the mocha glob quoted in `package.json`: unquoted, `sh` expands `test/**/*.js` like `test/*/*.js` and mocha gets only the files in subdirectories.
 - No `lint` script. `npx eslint lib test` currently fails to parse `lib/common.js` (object spread) and `lib/generate-all-api-object.js` (`for await`) because `.eslintrc` pins `ecmaVersion: 8`.
-- Style (`.prettierrc`, `.eslintrc`): 2 spaces, single quotes, semicolons, width 100. `lib/generate-all-api-object.js` is a dev script and does not follow this.
+- Style (`.prettierrc`, `.eslintrc`): 2 spaces, single quotes, semicolons, width 100; `npx prettier --write` works for `.js` files. The pinned prettier 1.19 cannot parse `import type`, so `.d.ts` files are formatted by hand. `lib/generate-all-api-object.js` is a dev script and does not follow this.
 - The npm package is limited by `"files": ["lib"]` in `package.json`; anything outside `lib/` (tests, util-scripts, local files) is not published. Check `npm pack --dry-run` before publishing.
 
 ## Architecture
 
-The call path is `lnd-async.js` → `lnd-rpc.js` → generated `all-api.js` + the `.proto` files.
+The call path is `lnd-async.js` → `lnd-rpc.js` → the line from `versions.js` (its `all-api.js` + `.proto` files).
 
-- **`lib/lnd-rpc.js`** builds credentials (TLS cert from path or base64, or `noCert` for a publicly-signed cert; macaroon from path or base64 sent as hex `macaroon` metadata, skipped with `noMacaroons`), then loads **every** proto listed in `all-api.js` from `lib/original-lnd-protos/` and instantiates one grpc-js client per service against the same `host:port`. Loader options matter to callers: `keepCase: true` (fields stay snake_case, e.g. `r_hash`), `enums: String`, `defaults: true`, `oneofs: true`, and `longs: String` unless `longsAsNumbers` is set. Loaded service constructors are cached per `longs` type. Google API annotation protos are resolved from the `protobufjs` package directory via `includeDirs`.
-- **`lib/lnd-async.js`** wraps the raw clients into the object returned by `connect()`:
+- **`lib/versions.js`** lists the bundled LND lines (`'0.18'` ... `'0.21'`): LND tag, proto directory, `all-api.js`, declaration file. `defaultVersion` is used when `connect()` gets no `lndVersion` and must change only in a major release (0.21 removed RPCs such as `SendPaymentSync`). The default line keeps its legacy paths `lib/original-lnd-protos/` and `lib/all-api.js`; other lines live in `lib/lnd-<line>/protos/` and `lib/lnd-<line>/all-api.js`.
+- **`lib/common.js`** maps `lndVersion` to a line (`resolveLndVersion` also accepts `'0.21.5-beta'`, `'v0.21.5-beta'` and GetInfo's `version`) and builds per-line data in `getLine()`: method lists per service and the lookup sets (`streamApis`/`callbackApis` for the flat surface, `allStreamApi`/`allCallbackApi` keyed `Service.method`). Its top-level exports of those sets and `allApi` describe the default line, as before. Stream vs. promise is decided by `all-api.js`, not by grpc metadata; a method not listed there is absent from the client.
+- **`lib/lnd-rpc.js`** builds credentials (TLS cert from path or base64, or `noCert` for a publicly-signed cert; macaroon from path or base64 sent as hex `macaroon` metadata, skipped with `noMacaroons`), then loads **every** proto of the line and instantiates one grpc-js client per service against the same `host:port`. Loader options matter to callers and to the declarations: `keepCase: true` (fields stay snake_case, e.g. `r_hash`), `enums: String`, `defaults: true`, `oneofs: true`, and `longs: String` unless `longsAsNumbers` is set. Service constructors are cached per line and `longs` type. Google API annotation protos are resolved from the `protobufjs` package directory via `includeDirs`.
+- **`lib/lnd-async.js`** wraps the raw clients into the object returned by `connect()` and exports `supportedLndVersions`, `defaultLndVersion`, `ValidationError`:
   - `client.<method>`: a flat legacy surface holding the methods of the `Lightning`, `WalletUnlocker` and `State` services only.
   - `client.<ServiceName>.<method>`: every service, keyed by **service name** (`client.Router`, `client.Invoices`, `client.WalletKit`, `client.WatchtowerClient`...), not by proto package.
   - `client.lnrpc`: the raw grpc-js clients (`services` for the legacy three, `allServices` for all).
-  - Unary RPCs are `promisify`-ed; server-streaming RPCs are returned bound but unwrapped (caller gets a grpc stream). Method names are lowerCamelCase.
-- **`lib/common.js`** derives the lookup sets (`streamApis`/`callbackApis` for the flat surface, `allStreamApi`/`allCallbackApi` keyed `Service.method`) from `all-api.js`. A method that is not listed in `all-api.js` is **silently absent** from the wrapped client, and stream vs. promise is decided by this list, not by grpc metadata.
-- **`lib/all-api.js` is generated, do not hand-edit.** `lib/generate-all-api-object.js` regex-parses each `.proto` for `package`, `service` and `rpc X (...) returns (stream ...)` (handles a signature split over two lines). Keys are paths relative to `original-lnd-protos/` (e.g. `routerrpc/router.proto`), walked in sorted order so the output is deterministic and its diff shows only API changes. It assumes **one service per proto file** (throws otherwise) and drops files without a service (e.g. `lnclipb/lncli.proto`).
+  - Unary RPCs are `promisify`-ed; streaming RPCs are returned bound but unwrapped (caller gets a grpc stream). Methods are exposed as `lowerCamelCase(rpc name)` (`deleteMacaroonID`) and looked up on the grpc-js client by the rpc name, because the lowerCamelCase alias grpc-js adds comes from lodash `camelCase` (`deleteMacaroonId`).
+- **`lib/strict.js`** (`connect({ strict: true })`) validates each request against its message type, loaded with protobufjs 6 per line, and throws `ValidationError` (unknown fields, types, ranges, enum values, maps, nested paths). Unary methods reject, streaming ones throw, bidirectional streams get a checking `write()`. Without `strict` the methods are exactly the bound/promisified grpc-js functions.
+- **`lib/all-api.js` (and `lib/lnd-<line>/all-api.js`) are generated, do not hand-edit.** `lib/generate-all-api-object.js` regex-parses each `.proto` for `package`, `service` and `rpc X (...) returns (stream ...)` (handles a signature split over two lines). Keys are paths relative to the proto directory (e.g. `routerrpc/router.proto`), walked in sorted order so the output is deterministic and its diff shows only API changes. It assumes **one service per proto file** (throws otherwise) and drops files without a service (e.g. `lnclipb/lncli.proto`).
+
+## TypeScript declarations
+
+- `lib/lnd-async.d.ts` is hand-written: `ConnectOptions`, `connect()` (its return type follows `lndVersion` and `longsAsNumbers` through `LndVersionOf`/`LongsOf`), `LndClient`, `ValidationError`. `lib/types/common.d.ts` holds the shared helpers (`Unary`, `ServerStream`, `Bidi`, typed `data` events).
+- `lib/types/lnd-<line>.d.ts` and `lib/types/index.d.ts` are **generated** by `util-scripts/generate-types.js`, do not hand-edit. Per message `Foo` (request: all optional, permissive scalars) and `Foo__Output<L>` (response: fields present per `defaults: true`, `L` = type of 64-bit integers); `Services<L>` and `LegacyMethods<L>` mirror `lib/lnd-async.js`. The generator also cross-checks `all-api.js` against the protos and throws on a mismatch.
+- The generator reads protos with **protobufjs 7** (dev dependency alias `protobufjs-7`), because the comment mode of protobufjs 6 fails on LND protos. The runtime stays on protobufjs 6 through `@grpc/proto-loader` 0.5; `test/types-runtime.spec.js` keeps the two in agreement.
 
 ## Updating to a new LND version
 
-Protos in `lib/original-lnd-protos/` are verbatim copies of `lnrpc/` from the LND repo.
+Protos are verbatim copies of `lnrpc/` from the LND repo, one directory per line (see `lib/versions.js`).
 
 ```bash
-./util-scripts/run-all.sh /path/to/lnd   # = copy-proto-files.sh <lnd> + generate-all-api-object.sh
+git -C /path/to/lnd checkout v0.21.5-beta
+./util-scripts/run-all.sh /path/to/lnd 0.21   # copy protos + all-api.js of the line, regenerate all declarations
 ```
 
-`copy-proto-files.sh` rsyncs only `*.proto` (default source `extra/lnd`); `generate-all-api-object.sh` must run from the repo root (it `cd`s into `lib/original-lnd-protos` and writes `lib/all-api.js`). After regenerating, check the `all-api.js` diff for new or removed services, since a new proto file with a service automatically becomes a new `client.<ServiceName>` namespace. Release commits then bump `version` in `package.json`, update the "supports LND version" line in `README.md`, and add an entry to its `## Versions` list.
+`run-all.sh` refuses to run when the checkout is not at the tag recorded in `lib/versions.js`; to move a line to a new patch release, change its `lndTag` first. A new line is a new entry in `lib/versions.js` (then update the line lists in `test/offline.spec.js` and `README.md`). `copy-proto-files.sh` rsyncs only `*.proto` with `--delete`; `generate-all-api-object.sh` must run from the repo root. After regenerating, check the `all-api.js` diff for new or removed services, since a new proto file with a service automatically becomes a new `client.<ServiceName>` namespace, and run `npm test`. Release commits then bump `version` in `package.json`, update the LND lines in `README.md`, and add an entry to its `## Versions` list.
