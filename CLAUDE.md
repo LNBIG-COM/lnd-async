@@ -17,11 +17,12 @@ npx mocha test/offline.spec.js -g strict    # single file / tests by name
 ```
 
 - `test/lnd-async.spec.js` hits a **real LND node** configured by `LND_ASYNC_TEST_LND_HOST`, `_LND_PORT`, `_MACAROON` (base64), `_MACAROON_PATH`, `_CERT` (base64), `_CERT_PATH`, `_NO_CERT=true` from a git-ignored `.env` (loaded via `-r dotenv/config`). It only checks that unary methods return a Promise and stream methods a stream, and passes even when the calls fail. Its method list is deliberately limited to read-only calls; **never add methods that change node state** (send, open/close channel, settle, etc.).
-- `test/offline.spec.js` runs against a local grpc-js server (`test/helpers/mock-lnd.js`, TLS with a throwaway certificate made by `openssl`; the suite is skipped without `openssl`). This is where end-to-end behaviour, `lndVersion` and strict mode are tested.
+- `test/offline.spec.js` runs against a local grpc-js server (`test/helpers/mock-lnd.js`, TLS with a throwaway certificate made by `openssl`; that block is skipped without `openssl`, the client-surface and validator blocks run anyway). This is where end-to-end behaviour, `lndVersion` and strict mode are tested.
 - `test/types-runtime.spec.js` parses the shipped `lib/types/lnd-<line>.d.ts` and checks every message of every line against what protobufjs 6 really decodes (which fields are always present, the kind of each default value); it also fails when `lib/types/` is out of date.
 - `test/types/*.ts` are compile-only checks; lines marked `@ts-expect-error` must fail to compile.
 - Keep the mocha glob quoted in `package.json`: unquoted, `sh` expands `test/**/*.js` like `test/*/*.js` and mocha gets only the files in subdirectories.
-- No `lint` script. `npx eslint lib test` currently fails to parse `lib/common.js` (object spread) and `lib/generate-all-api-object.js` (`for await`) because `.eslintrc` pins `ecmaVersion: 8`.
+- No `lint` script. `.eslintrc` pins `ecmaVersion: 8`, so `npx eslint lib test` fails to parse every file with newer syntax (object spread, `for await`, BigInt literals in `lib/strict.js`); it is not a usable gate.
+- Code in `lib/` must run on Node.js 12.10 (`engines`, the minimum of `@grpc/grpc-js` 1.14): no `?.`, `??`, `Object.hasOwn`, `.at()`, `replaceAll`, `fs.rmSync` there. Tests and `util-scripts/` may use a current Node.
 - Style (`.prettierrc`, `.eslintrc`): 2 spaces, single quotes, semicolons, width 100; `npx prettier --write` works for `.js` files. The pinned prettier 1.19 cannot parse `import type`, so `.d.ts` files are formatted by hand. `lib/generate-all-api-object.js` is a dev script and does not follow this.
 - The npm package is limited by `"files": ["lib"]` in `package.json`; anything outside `lib/` (tests, util-scripts, local files) is not published. Check `npm pack --dry-run` before publishing.
 
