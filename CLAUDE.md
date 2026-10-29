@@ -18,6 +18,7 @@ npx mocha test/lnd-async.spec.js -r dotenv/config -g getInfo # single test by na
 - Tests only check that unary methods return a Promise and stream methods return a stream (with a 500 ms deadline / 200 ms cancel). The method list is deliberately limited to read-only calls; **never add methods that change node state** (send, open/close channel, settle, etc.) because the suite runs against a live node.
 - No `lint` script. `npx eslint lib test` currently fails to parse `lib/common.js` (object spread) and `lib/generate-all-api-object.js` (`for await`) because `.eslintrc` pins `ecmaVersion: 8`.
 - Style (`.prettierrc`, `.eslintrc`): 2 spaces, single quotes, semicolons, width 100. `lib/generate-all-api-object.js` is a dev script and does not follow this.
+- The npm package is limited by `"files": ["lib"]` in `package.json`; anything outside `lib/` (tests, util-scripts, local files) is not published. Check `npm pack --dry-run` before publishing.
 
 ## Architecture
 
