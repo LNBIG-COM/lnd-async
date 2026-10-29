@@ -141,6 +141,8 @@ Every LND release line changes the API: RPCs and fields are added, deprecated on
 | `'0.20'` (default) | v0.20.6-beta |
 | `'0.21'` | v0.21.5-beta |
 
+LND 0.21 is available on request (`lndVersion: '0.21'`); the default stays 0.20 until lnd-async 6.0.0.
+
 ```javascript
 const lnd = require('lnd-async');
 
