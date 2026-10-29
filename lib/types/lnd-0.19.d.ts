@@ -788,6 +788,10 @@ export namespace invoicesrpc {
     'current_height': number;
     /**
      * The wire message custom records of the exit HTLC.
+     *
+     * Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character
+     * binary strings (the bytes of the number, least significant first), not decimal strings.
+     * See "64-bit map keys" in the README of lnd-async.
      */
     'exit_htlc_wire_custom_records': { [key: string]: $BytesOut };
   }
@@ -2945,6 +2949,10 @@ export namespace lnrpc {
     'node2_policy': lnrpc.RoutingPolicy__Output<L> | null;
     /**
      * Custom channel announcement tlv records.
+     *
+     * Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character
+     * binary strings (the bytes of the number, least significant first), not decimal strings.
+     * See "64-bit map keys" in the README of lnd-async.
      */
     'custom_records': { [key: string]: $BytesOut };
   }
@@ -5142,6 +5150,10 @@ export namespace lnrpc {
      * An optional set of key-value TLV records. This is useful within the context
      * of the SendToRoute call as it allows callers to specify arbitrary K-V pairs
      * to drop off at each hop within the onion.
+     *
+     * Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character
+     * binary strings (the bytes of the number, least significant first), not decimal strings.
+     * See "64-bit map keys" in the README of lnd-async.
      */
     'custom_records': { [key: string]: $BytesOut };
     /**
@@ -5953,6 +5965,10 @@ export namespace lnrpc {
     'state': lnrpc.InvoiceHTLCState__Output;
     /**
      * Custom tlv records.
+     *
+     * Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character
+     * binary strings (the bytes of the number, least significant first), not decimal strings.
+     * See "64-bit map keys" in the README of lnd-async.
      */
     'custom_records': { [key: string]: $BytesOut };
     /**
@@ -6097,6 +6113,10 @@ export namespace lnrpc {
     'features': { [key: string]: lnrpc.Feature__Output<L> };
     /**
      * Custom node announcement tlv records.
+     *
+     * Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character
+     * binary strings (the bytes of the number, least significant first), not decimal strings.
+     * See "64-bit map keys" in the README of lnd-async.
      */
     'custom_records': { [key: string]: $BytesOut };
   }
@@ -7551,6 +7571,10 @@ export namespace lnrpc {
     /**
      * The custom TLV records that were sent to the first hop as part of the HTLC
      * wire message for this payment.
+     *
+     * Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character
+     * binary strings (the bytes of the number, least significant first), not decimal strings.
+     * See "64-bit map keys" in the README of lnd-async.
      */
     'first_hop_custom_records': { [key: string]: $BytesOut };
   }
@@ -8675,6 +8699,10 @@ export namespace lnrpc {
      * does not support the specified records, an error will be returned.
      * Record types are required to be in the custom range >= 65536. When using
      * REST, the values must be encoded as base64.
+     *
+     * Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character
+     * binary strings (the bytes of the number, least significant first), not decimal strings.
+     * See "64-bit map keys" in the README of lnd-async.
      */
     'dest_custom_records': { [key: string]: $BytesOut };
     /**
@@ -9293,6 +9321,10 @@ export namespace lnrpc {
     'last_update': number;
     /**
      * Custom channel update tlv records.
+     *
+     * Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character
+     * binary strings (the bytes of the number, least significant first), not decimal strings.
+     * See "64-bit map keys" in the README of lnd-async.
      */
     'custom_records': { [key: string]: $BytesOut };
     'inbound_fee_base_msat': number;
@@ -9724,6 +9756,10 @@ export namespace lnrpc {
      * application specific data during the payment attempt. Record types are
      * required to be in the custom range >= 65536. When using REST, the values
      * must be encoded as base64.
+     *
+     * Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character
+     * binary strings (the bytes of the number, least significant first), not decimal strings.
+     * See "64-bit map keys" in the README of lnd-async.
      */
     'dest_custom_records': { [key: string]: $BytesOut };
     /**
@@ -11158,6 +11194,10 @@ export namespace routerrpc {
      * specific data during the payment attempt. Record types are required to be in
      * the custom range >= 65536. When using REST, the values must be encoded as
      * base64.
+     *
+     * Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character
+     * binary strings (the bytes of the number, least significant first), not decimal strings.
+     * See "64-bit map keys" in the README of lnd-async.
      */
     'first_hop_custom_records': { [key: string]: $BytesOut };
   }
@@ -11321,6 +11361,10 @@ export namespace routerrpc {
     'outgoing_expiry': number;
     /**
      * Any custom records that were present in the payload.
+     *
+     * Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character
+     * binary strings (the bytes of the number, least significant first), not decimal strings.
+     * See "64-bit map keys" in the README of lnd-async.
      */
     'custom_records': { [key: string]: $BytesOut };
     /**
@@ -11334,6 +11378,10 @@ export namespace routerrpc {
     'auto_fail_height': number;
     /**
      * The custom records of the peer's incoming p2p wire message.
+     *
+     * Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character
+     * binary strings (the bytes of the number, least significant first), not decimal strings.
+     * See "64-bit map keys" in the README of lnd-async.
      */
     'in_wire_custom_records': { [key: string]: $BytesOut };
   }
@@ -11458,6 +11506,10 @@ export namespace routerrpc {
      * This map will merge with the existing set of custom records (if any),
      * replacing any conflicting types. Note that there currently is no support
      * for deleting existing custom records (they can only be replaced).
+     *
+     * Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character
+     * binary strings (the bytes of the number, least significant first), not decimal strings.
+     * See "64-bit map keys" in the README of lnd-async.
      */
     'out_wire_custom_records': { [key: string]: $BytesOut };
   }
@@ -12296,6 +12348,10 @@ export namespace routerrpc {
      * application specific data during the payment attempt. Record types are
      * required to be in the custom range >= 65536. When using REST, the values
      * must be encoded as base64.
+     *
+     * Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character
+     * binary strings (the bytes of the number, least significant first), not decimal strings.
+     * See "64-bit map keys" in the README of lnd-async.
      */
     'dest_custom_records': { [key: string]: $BytesOut };
     /**
@@ -12380,6 +12436,10 @@ export namespace routerrpc {
      * specific data during the payment attempt. Record types are required to be in
      * the custom range >= 65536. When using REST, the values must be encoded as
      * base64.
+     *
+     * Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character
+     * binary strings (the bytes of the number, least significant first), not decimal strings.
+     * See "64-bit map keys" in the README of lnd-async.
      */
     'first_hop_custom_records': { [key: string]: $BytesOut };
   }
@@ -12430,6 +12490,10 @@ export namespace routerrpc {
      * specific data during the payment attempt. Record types are required to be in
      * the custom range >= 65536. When using REST, the values must be encoded as
      * base64.
+     *
+     * Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character
+     * binary strings (the bytes of the number, least significant first), not decimal strings.
+     * See "64-bit map keys" in the README of lnd-async.
      */
     'first_hop_custom_records': { [key: string]: $BytesOut };
   }

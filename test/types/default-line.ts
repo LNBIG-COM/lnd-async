@@ -112,6 +112,19 @@ async function connectOptions() {
   await connect({ lndHost: 'node', lndPortt: 10009 });
   // @ts-expect-error wrong type of an option
   await connect({ noCert: 'yes' });
+  // @ts-expect-error not a bundled line
+  await connect({ lndHost: 'node', lndVersion: '0.17' });
+
+  // A configuration object with more fields than connect() needs is fine
+  const stored = { lndHost: 'node', lndPort: 10009, label: 'main node' };
+  const fromStored = await connect(stored);
+  expectType<Equal<(typeof fromStored)['lnrpc'], LndClient['lnrpc']>>();
+  interface NodeConfig extends ConnectOptions {
+    name: string;
+  }
+  const config: NodeConfig = { name: 'main', lndHost: 'node' };
+  const fromConfig = await (await connect(config)).getInfo({});
+  expectType<Equal<typeof fromConfig.best_header_timestamp, string | number>>();
 }
 
 function runtimeExports(error: unknown) {
@@ -130,7 +143,14 @@ async function rawClients() {
   client.lnrpc.services.lightning.close();
 }
 
+function oneofs(update: lnrpc.OpenStatusUpdate__Output, request: lnrpc.PolicyUpdateRequest) {
+  // The property named after a oneof tells which member is set
+  expectType<Equal<typeof update.update, 'chan_pending' | 'chan_open' | 'psbt_fund' | undefined>>();
+  expectType<Equal<typeof update.chan_open, lnrpc.ChannelOpenUpdate__Output | undefined>>();
+  expectType<Equal<typeof request.scope, 'global' | 'chan_point' | undefined>>();
+}
+
 // The versioned namespace of the default line is the same as the top-level one
 expectType<Equal<Lnd0_20.lnrpc.GetInfoResponse__Output, lnrpc.GetInfoResponse__Output>>();
 
-void [responses, requests, streams, longsAsNumbers, connectOptions, runtimeExports, rawClients];
+void [responses, requests, streams, longsAsNumbers, connectOptions, runtimeExports, rawClients, oneofs];

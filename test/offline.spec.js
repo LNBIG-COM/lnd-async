@@ -94,6 +94,27 @@ describe('lnd-async against a mock LND', function() {
       expect(call.metadata.get('macaroon')).to.deep.equal([MACAROON.toString('hex')]);
     });
 
+    it('reads options through getters and the prototype chain, as before', async () => {
+      class Options {
+        get lndHost() {
+          return '127.0.0.1';
+        }
+        get lndPort() {
+          return mock.port;
+        }
+        get cert() {
+          return certificate.cert.toString('base64');
+        }
+      }
+      let options = Object.create(new Options());
+      Object.defineProperty(options, 'macaroon', { value: MACAROON.toString('base64') });
+      let client = await sut.connect(options);
+      clients.push(client);
+      expect((await client.getInfo({})).alias).to.equal('mock');
+      let call = mock.calls.filter(c => c.method === 'Lightning.GetInfo').pop();
+      expect(call.metadata.get('macaroon')).to.deep.equal([MACAROON.toString('hex')]);
+    });
+
     it('decodes responses with defaults, string longs and snake_case names', async () => {
       let client = await connect(mock);
       let info = await client.getInfo({});
@@ -232,6 +253,17 @@ describe('lnd-async against a mock LND', function() {
         expect(interceptorRequests.pop().action).to.equal('FAIL');
       });
 
+      it('validates a message passed to end() of a bidirectional stream', async () => {
+        let client = await connect(mock, { strict: true });
+        let interceptor = client.Router.htlcInterceptor();
+        interceptor.on('error', () => {}); // CANCELLED by the cancel() below
+        expect(() => interceptor.end({ action: 'ACCEPT' })).to.throw(
+          sut.ValidationError,
+          'routerrpc.ForwardHtlcInterceptResponse.action: expected a value of'
+        );
+        interceptor.cancel();
+      });
+
       it('rejects a missing request', async () => {
         let client = await connect(mock, { strict: true });
         let err = await client.getInfo().then(
@@ -283,6 +315,40 @@ describe('lnd-async client surface', () => {
     expect(services.reduce((n, s) => n + Object.keys(client[s]).length, 0)).to.equal(173);
     for (let name of flat) expect(client[name]).to.be.a('function');
     expect(client.lnrpc.services).to.have.keys('lightning', 'walletUnlocker', 'state');
+  });
+
+  it('exposes rpcs with consecutive capitals under the lowerCamelCase of the rpc name', async () => {
+    let client = await sut.connect(base);
+    expect(client.deleteMacaroonID).to.be.a('function');
+    expect(client.registerRPCMiddleware).to.be.a('function');
+    expect(client.Lightning.deleteMacaroonID).to.be.a('function');
+    expect(client.Lightning.listMacaroonIDs).to.be.a('function');
+    expect(client.Router.xImportMissionControl).to.be.a('function');
+    expect(client.Signer.muSig2CreateSession).to.be.a('function');
+    expect(client).to.not.have.property('deleteMacaroonId');
+  });
+
+  it('has the methods the TypeScript declarations promise, in every line', async () => {
+    let { loadLine } = require('../util-scripts/generate-types');
+    for (let lndVersion of sut.supportedLndVersions) {
+      let { root } = loadLine(lndVersion);
+      let declared = [];
+      (function visit(ns) {
+        for (let obj of ns.nestedArray || []) {
+          if (obj.methodsArray) {
+            for (let m of obj.methodsArray)
+              declared.push(`${obj.name}.${m.name[0].toLowerCase()}${m.name.slice(1)}`);
+          }
+          visit(obj);
+        }
+      })(root);
+      let client = await sut.connect({ ...base, lndVersion });
+      let actual = [];
+      for (let service of Object.keys(client).filter(k => /^[A-Z]/.test(k))) {
+        for (let method of Object.keys(client[service])) actual.push(`${service}.${method}`);
+      }
+      expect(actual.sort(), lndVersion).to.deep.equal(declared.sort());
+    }
   });
 
   it('matches all-api.js of every line', async () => {
@@ -424,7 +490,7 @@ describe('strict mode validation', () => {
     );
   });
 
-  it('accepts the oneof property of decoded messages, so a response can be sent back', () => {
+  it('accepts the oneof property that decoded messages carry', () => {
     updatePolicy({
       scope: 'chan_point',
       chan_point: { funding_txid: 'funding_txid_str', funding_txid_str: 'ab', output_index: 0 },
@@ -435,6 +501,56 @@ describe('strict mode validation', () => {
     rejects(
       () => updatePolicy({ scope: 'everything' }),
       'scope: expected one of "global", "chan_point"'
+    );
+  });
+
+  it('checks that one member of a oneof is set and named', () => {
+    rejects(
+      () => updatePolicy({ global: true, chan_point: { funding_txid_str: 'ab' } }),
+      'lnrpc.PolicyUpdateRequest.chan_point: only one of "global", "chan_point" may be set (oneof scope)'
+    );
+    rejects(
+      () => updatePolicy({ scope: 'global', chan_point: { funding_txid_str: 'ab' } }),
+      'lnrpc.PolicyUpdateRequest.scope: names "global", but "chan_point" is set'
+    );
+    rejects(
+      () => updatePolicy({ scope: 'global' }),
+      'scope: names "global", but that field is not set'
+    );
+    updatePolicy({ global: true, scope: 'global' });
+  });
+
+  it('accepts only the base64 that protobufjs decodes', () => {
+    sendPayment({ dest: 'YWJj', payment_hash: 'YWI', payment_addr: 'YWI=' });
+    rejects(
+      () => sendPayment({ dest: 'YW-j' }),
+      'dest: expected a Buffer, a Uint8Array or a base64 string'
+    );
+    rejects(
+      () => sendPayment({ dest: 'YW_j' }),
+      'dest: expected a Buffer, a Uint8Array or a base64 string'
+    );
+    rejects(
+      () => sendPayment({ dest: 'YQ==YQ==' }),
+      'dest: expected a Buffer, a Uint8Array or a base64 string'
+    );
+  });
+
+  it('checks map keys, including binary keys copied from a response', () => {
+    rejects(
+      () => sendPayment({ dest_custom_records: { '-1': 'YQ==' } }),
+      'dest_custom_records["-1"]: expected an integer map key (uint64)'
+    );
+    rejects(
+      () => sendPayment({ dest_custom_records: { 'laÆF\u0001\u0000\u0000\u0000': 'YQ==' } }),
+      'this looks like a key decoded from a response, convert it to a decimal string first'
+    );
+  });
+
+  it('rejects an unknown field even when its value is undefined', () => {
+    rejects(
+      () => sendPayment({ payment_request: 'lnbc1', amtt: undefined }),
+      'amtt: unknown field (did you mean "amt"?)'
     );
   });
 

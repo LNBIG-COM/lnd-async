@@ -32,6 +32,11 @@ const NUMBER_TYPES = new Set([
   'sfixed32',
 ]);
 const LONG_TYPES = new Set(['int64', 'uint64', 'sint64', 'fixed64', 'sfixed64']);
+const LONG_MAP_KEY_NOTE = [
+  'Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character',
+  'binary strings (the bytes of the number, least significant first), not decimal strings.',
+  'See "64-bit map keys" in the README of lnd-async.',
+];
 // Names TypeScript does not accept as an interface or type alias name
 const RESERVED = new Set([
   'any',
@@ -193,7 +198,11 @@ function renderMessage(type, indent) {
     const lines = [];
     for (const field of type.fieldsArray) {
       const optional = !output || fieldShape(field).optional;
-      lines.push(...jsdoc(indent + '  ', field.comment, { deprecated: isDeprecated(field) }));
+      // protobufjs 6 decodes 64-bit map keys into binary strings, not decimal ones
+      const extra = output && field.map && LONG_TYPES.has(field.keyType) ? LONG_MAP_KEY_NOTE : [];
+      lines.push(
+        ...jsdoc(indent + '  ', field.comment, { deprecated: isDeprecated(field), extra })
+      );
       lines.push(`${indent}  '${field.name}'${optional ? '?' : ''}: ${fieldType(field, output)};`);
     }
     // With `oneofs: true` the decoded message names the member that is set

@@ -73,36 +73,23 @@ export interface RawClients {
 export type LndClient<V extends LndVersion = DefaultLndVersion, L extends LongOut = string> =
   LegacyMethodsByVersion<L>[V] & ServicesByVersion<L>[V] & { lnrpc: RawClients };
 
-type OptionValue<O, K extends keyof ConnectOptions> = O extends { [P in K]?: infer T } ? T : never;
-
-/** The LND line selected by the options `O` passed to connect(). */
-export type LndVersionOf<O> = 'lndVersion' extends keyof O
-  ? OptionValue<O, 'lndVersion'> extends infer V
-    ? V extends LndVersion
-      ? V
-      : DefaultLndVersion
-    : never
-  : DefaultLndVersion;
-
-/** The type of 64-bit integers in responses for the options `O` passed to connect(). */
-export type LongsOf<O> = 'longsAsNumbers' extends keyof O
-  ? [OptionValue<O, 'longsAsNumbers'>] extends [true]
-    ? number
-    : [OptionValue<O, 'longsAsNumbers'>] extends [false | undefined]
-      ? string
-      : LongOut
-  : string;
-
-type NoExtraKeys<O> = { [K in Exclude<keyof O, keyof ConnectOptions>]: never };
+/** The type of 64-bit integers in responses for a value of `longsAsNumbers`. */
+export type LongsFor<N extends boolean> = N extends true ? number : string;
 
 /**
  * Creates the gRPC clients of every LND service. Nothing is sent to LND until the first call.
  * The client type follows the options: `lndVersion` selects the API of that LND line and
- * `longsAsNumbers: true` turns 64-bit integers in responses into numbers.
+ * `longsAsNumbers: true` turns 64-bit integers in responses into numbers. When an option is not
+ * known at compile time (a `boolean`, a union of lines) the client type covers every case.
  */
-export function connect<O extends ConnectOptions = {}>(
-  options?: O & NoExtraKeys<O>
-): Promise<LndClient<LndVersionOf<O>, LongsOf<O>>>;
+export function connect<V extends LndVersion = DefaultLndVersion, N extends boolean = false>(
+  options?: Omit<ConnectOptions, 'lndVersion' | 'longsAsNumbers'> & {
+    /** LND release line whose protos (and types) to use. Default: {@link DefaultLndVersion}. */
+    lndVersion?: V;
+    /** Return 64-bit integers as `number` instead of `string` (values above 2^53 lose precision). */
+    longsAsNumbers?: N;
+  }
+): Promise<LndClient<V, LongsFor<N>>>;
 
 /** LND lines with bundled protos, oldest first. */
 export const supportedLndVersions: readonly LndVersion[];

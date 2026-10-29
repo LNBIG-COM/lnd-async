@@ -7,11 +7,22 @@
 
 set -e
 
+if [ -z "$1" ]; then
+  echo "Usage: util-scripts/run-all.sh <lnd_repository> [line]" >&2
+  exit 1
+fi
+
 line=${2:-`node -p "require('./lib/versions').defaultVersion"`}
-read proto_dir api tag <<< `node -p "
+# A failure inside a here-string does not stop `set -e`: check the result explicitly
+info=`node -p "
   const v = require('./lib/versions').versions['$line'];
   if (!v) { console.error('Add the line $line to lib/versions.js first'); process.exit(1); }
-  ['lib/' + v.protoDir, 'lib/' + v.api, v.lndTag].join(' ')"`
+  ['lib/' + v.protoDir, 'lib/' + v.api, v.lndTag].join(' ')"` || exit 1
+read proto_dir api tag <<< "$info"
+if [ -z "$proto_dir" ] || [ -z "$api" ] || [ -z "$tag" ]; then
+  echo "lib/versions.js has no complete entry for the line $line" >&2
+  exit 1
+fi
 
 actual=`git -C "$1" describe --tags --exact-match 2>/dev/null || true`
 if [ "$actual" != "$tag" ]; then

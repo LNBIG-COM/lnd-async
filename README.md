@@ -155,7 +155,9 @@ A full version string is accepted as well (`'0.21.5-beta'`, `'v0.21.5-beta'` or 
 
 ```javascript
 let options = { lndHost: '10.10.0.12', macaroonPath: __dirname + '/admin.macaroon' };
-let { version } = await (await lnd.connect(options)).getInfo({});
+let probe = await lnd.connect(options);
+let { version } = await probe.getInfo({});
+Object.values(probe.lnrpc.allServices).forEach(service => service.close());
 let client = await lnd.connect({ ...options, lndVersion: version }); // rejects if the line is not bundled
 ```
 
@@ -200,7 +202,19 @@ await client.addInvoice({ valeu: 1000 });
 // ValidationError: lnrpc.Invoice.valeu: unknown field (did you mean "value"?)
 ```
 
-Strict mode rejects unknown fields, values of the wrong type, integers out of the range of their field (numbers beyond 2^53 must be passed as decimal strings), `bytes` that are neither a `Buffer`/`Uint8Array` nor base64, and unknown enum values, in nested messages, arrays and maps too. The error tells where the problem is, e.g. `routerrpc.SendPaymentRequest.route_hints[0].hop_hints[0].fee_base_msat`. A unary call rejects with `lnd.ValidationError` (a `TypeError`), a streaming call throws, and each `write()` to a bidirectional stream is checked. Nothing is sent when a request is rejected. Responses are not checked.
+Strict mode rejects unknown fields, values of the wrong type, integers out of the range of their field (numbers beyond 2^53 must be passed as decimal strings), `bytes` that are neither a `Buffer`/`Uint8Array` nor standard base64, unknown enum values, and more than one member of a `oneof`, in nested messages, arrays and maps too. The error tells where the problem is, e.g. `routerrpc.SendPaymentRequest.route_hints[0].hop_hints[0].fee_base_msat`. A unary call rejects with `lnd.ValidationError` (a `TypeError`), a streaming call throws, and each `write()` to a bidirectional stream is checked. Nothing is sent when a request is rejected. Responses are not checked.
+
+### 64-bit map keys
+
+protobufjs, which decodes the responses, turns the keys of maps with 64-bit integer keys (such as `custom_records` of a `Hop` or an `InvoiceHTLC`) into 8-character binary strings, the bytes of the number with the least significant first, instead of decimal strings. Convert such a key before using it, and before sending it back in a request:
+
+```javascript
+const decimalKey = key => [...key].reduceRight((n, c) => (n << 8n) | BigInt(c.charCodeAt(0)), 0n).toString();
+
+for (let [key, value] of Object.entries(hop.custom_records)) console.log(decimalKey(key), value);
+```
+
+Sent back unconverted, every such key becomes 0 (strict mode rejects it instead). The TypeScript declarations note this on each affected field.
 
 ## Versions
 

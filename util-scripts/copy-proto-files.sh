@@ -10,7 +10,9 @@ lnd_async_dir=`pwd`
 lnd_repo=${1:-extra/lnd}
 target=${2:-lib/original-lnd-protos}
 
+# rsync --delete runs on the target: allow only a protos directory inside lib/
 case "$target" in
+  *..*) echo "The target directory must not contain '..', got: $target" >&2; exit 1 ;;
   lib/*protos) ;;
   *) echo "The target directory must be lib/...protos, got: $target" >&2; exit 1 ;;
 esac

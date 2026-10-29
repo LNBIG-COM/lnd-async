@@ -95,7 +95,8 @@ async function startMockLnd({ certificate, lndVersion = '0.20', handlers }) {
   return {
     port,
     calls,
-    close: () => new Promise(resolve => server.tryShutdown(() => resolve())),
+    // forceShutdown: a stream left open by a failed test must not keep mocha waiting
+    close: () => server.forceShutdown(),
   };
 }
 
