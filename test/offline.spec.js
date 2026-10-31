@@ -457,6 +457,29 @@ describe('lnd-async client surface', () => {
     });
   });
 
+  it('tells the line it was made with', async () => {
+    let client = await sut.connect({ ...base, lndVersion: '0.21.5-beta' });
+    expect(client.lndVersion).to.equal('0.21');
+    expect((await sut.connect(base)).lndVersion).to.equal('0.20');
+    // Not among the methods, and read-only
+    expect(Object.keys(client)).to.not.include('lndVersion');
+    expect(() => {
+      'use strict';
+      client.lndVersion = '0.18';
+    }).to.throw(TypeError);
+    expect(client.lndVersion).to.equal('0.21');
+  });
+
+  it('maps a version string to its line without connecting', () => {
+    expect(sut.resolveLndVersion('0.21.5-beta commit=v0.21.5-beta')).to.equal('0.21');
+    expect(sut.resolveLndVersion('v0.18.5-beta')).to.equal('0.18');
+    expect(sut.resolveLndVersion('0.19')).to.equal('0.19');
+    expect(sut.resolveLndVersion()).to.equal('0.20');
+    expect(() => sut.resolveLndVersion('0.22.0-beta')).to.throw(
+      'Unsupported lndVersion "0.22.0-beta"; the supported LND lines are 0.18, 0.19, 0.20, 0.21'
+    );
+  });
+
   it('rejects an unsupported lndVersion', async () => {
     let err = await sut.connect({ ...base, lndVersion: '0.17' }).then(
       () => null,

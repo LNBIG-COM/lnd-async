@@ -1,5 +1,5 @@
 // Compile-only checks of `lndVersion`: the client type follows the selected LND line.
-import { connect } from '../../lib/lnd-async';
+import { connect, resolveLndVersion } from '../../lib/lnd-async';
 import type { ConnectOptions, LndClient, LndVersion, Lnd0_18, Lnd0_21, lnrpc } from '../../lib/lnd-async';
 
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
@@ -8,6 +8,9 @@ function expectType<T extends true>(): void {}
 async function defaultLine() {
   const client = await connect();
   expectType<Equal<typeof client, LndClient<'0.20', string>>>();
+  expectType<Equal<typeof client.lndVersion, '0.20'>>();
+  // @ts-expect-error read-only
+  client.lndVersion = '0.20';
   // Deprecated in 0.20 but still present
   await client.sendPaymentSync({ payment_request: 'lnbc1' });
   await client.deleteCanceledInvoice({ invoice_hash: 'ab' });
@@ -18,6 +21,7 @@ async function defaultLine() {
 async function line021() {
   const client = await connect({ lndVersion: '0.21' });
   expectType<Equal<typeof client, LndClient<'0.21', string>>>();
+  expectType<Equal<typeof client.lndVersion, '0.21'>>();
   await client.sendOnionMessage({ peer: Buffer.alloc(33), path_key: Buffer.alloc(33), onion: Buffer.alloc(0) });
   client.subscribeOnionMessages({}).on('data', message => {
     expectType<Equal<typeof message, Lnd0_21.lnrpc.OnionMessageUpdate__Output>>();
@@ -49,6 +53,10 @@ async function unknownAtCompileTime(version: LndVersion, options: ConnectOptions
   const info = await client.getInfo({});
   const height: number = info.block_height;
   void height;
+  expectType<Equal<typeof client.lndVersion, LndVersion>>();
+  // The line of the node, to compare with the line of the client
+  expectType<Equal<ReturnType<typeof resolveLndVersion>, LndVersion>>();
+  if (resolveLndVersion(info.version) !== client.lndVersion) client.lnrpc.services.lightning.close();
   // @ts-expect-error not present in every line
   client.sendOnionMessage;
 

@@ -71,7 +71,12 @@ export interface RawClients {
  * directly on it, every service as `client.<Service>`, the raw clients as `client.lnrpc`.
  */
 export type LndClient<V extends LndVersion = DefaultLndVersion, L extends LongOut = string> =
-  LegacyMethodsByVersion<L>[V] & ServicesByVersion<L>[V] & { lnrpc: RawClients };
+  LegacyMethodsByVersion<L>[V] &
+  ServicesByVersion<L>[V] & {
+    lnrpc: RawClients;
+    /** The LND line whose protos the client uses: `'0.21'` for `lndVersion: '0.21.5-beta'`. */
+    readonly lndVersion: V;
+  };
 
 /** The type of 64-bit integers in responses for a value of `longsAsNumbers`. */
 export type LongsFor<N extends boolean> = N extends true ? number : string;
@@ -96,6 +101,13 @@ export const supportedLndVersions: readonly LndVersion[];
 
 /** The line used when connect() gets no `lndVersion`. */
 export const defaultLndVersion: DefaultLndVersion;
+
+/**
+ * The bundled line that connect() uses for an `lndVersion`: a line (`'0.21'`) or a full version
+ * string (`'0.21.5-beta'`, `'v0.21.5-beta'`, the `version` of `getInfo`); without one, the default
+ * line. Throws when the line is not bundled.
+ */
+export function resolveLndVersion(lndVersion?: string | null): LndVersion;
 
 /** Thrown in strict mode when a request does not match its protobuf message. */
 export class ValidationError extends TypeError {

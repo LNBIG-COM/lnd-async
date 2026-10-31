@@ -163,6 +163,14 @@ Object.values(probe.lnrpc.allServices).forEach(service => service.close());
 let client = await lnd.connect({ ...options, lndVersion: version }); // rejects if the line is not bundled
 ```
 
+The client tells its line as `client.lndVersion` (`'0.21'` for `lndVersion: '0.21.5-beta'`), and `lnd.resolveLndVersion()` maps a version string to its line without connecting (it throws if the line is not bundled), so a client can be checked against its node:
+
+```javascript
+let client = await lnd.connect({ ...options, lndVersion: '0.21' });
+let { version } = await client.getInfo({});
+if (lnd.resolveLndVersion(version) !== client.lndVersion) console.warn(`LND ${version}, protos of ${client.lndVersion}`);
+```
+
 Use the line of your node. Protobuf messages are compatible across versions, but an RPC the node does not have fails with `UNIMPLEMENTED`, and a request field the bundled protos do not know is dropped without an error. So is a response field: on LND 0.21 with the line 0.20 the `CHANNEL_UPDATE` events of `subscribeChannelEvents` come as `{ type: 7 }`, without their `updated_channel`. An enum value the protos of the line do not have comes as its number (7 here), not as a name.
 
 ### TypeScript
