@@ -375,24 +375,43 @@ describe('lnd-async against a mock LND', function() {
       }
     });
 
-    it('decodes an enum value of a newer LND into its number', async () => {
-      let mock = await startMockLnd({
-        certificate,
-        lndVersion: '0.21',
-        handlers: {
-          Lightning: {
-            SubscribeChannelEvents: call => {
-              call.write({
-                type: 'CHANNEL_UPDATE',
-                updated_channel: { channel: { chan_id: '1' } },
-              });
-              call.write({ type: 'ACTIVE_CHANNEL', active_channel: { funding_txid_str: 'ab' } });
-              call.end();
+    describe('enum values of a newer LND', () => {
+      let mock;
+
+      before(async () => {
+        mock = await startMockLnd({
+          certificate,
+          lndVersion: '0.21',
+          handlers: {
+            Lightning: {
+              SubscribeChannelEvents: call => {
+                call.write({
+                  type: 'CHANNEL_UPDATE',
+                  updated_channel: { channel: { chan_id: '1' } },
+                });
+                call.write({ type: 'ACTIVE_CHANNEL', active_channel: { funding_txid_str: 'ab' } });
+                call.end();
+              },
+              // TAPROOT = 7 is new in 0.21; it is only in the elements of a list
+              ListChannels: (call, callback) =>
+                callback(null, {
+                  channels: [
+                    { chan_id: '1', commitment_type: 'ANCHORS' },
+                    { chan_id: '2', commitment_type: 'TAPROOT' },
+                  ],
+                }),
+              ChannelAcceptor: call => {
+                call.write({ pending_chan_id: Buffer.alloc(32), commitment_type: 'TAPROOT' });
+                call.on('data', () => call.end());
+              },
             },
           },
-        },
+        });
       });
-      try {
+
+      after(() => mock.close());
+
+      it('come as numbers from a server stream', async () => {
         let client = await connect(mock, { lndVersion: '0.20' });
         let events = [];
         await new Promise((resolve, reject) =>
@@ -406,9 +425,33 @@ describe('lnd-async against a mock LND', function() {
         expect(events[0]).to.deep.equal({ type: 7 });
         expect(events[1].type).to.equal('ACTIVE_CHANNEL');
         expect(events[1].active_channel.funding_txid_str).to.equal('ab');
-      } finally {
-        await mock.close();
-      }
+      });
+
+      it('come as numbers from a unary call, with either longs', async () => {
+        let client = await connect(mock, { lndVersion: '0.20' });
+        let { channels } = await client.listChannels({});
+        expect(channels.map(c => [c.chan_id, c.commitment_type])).to.deep.equal([
+          ['1', 'ANCHORS'],
+          ['2', 7],
+        ]);
+        let numbers = await connect(mock, { lndVersion: '0.20', longsAsNumbers: true });
+        channels = (await numbers.Lightning.listChannels({})).channels;
+        expect(channels.map(c => [c.chan_id, c.commitment_type])).to.deep.equal([
+          [1, 'ANCHORS'],
+          [2, 7],
+        ]);
+      });
+
+      it('come as numbers from a bidirectional stream', async () => {
+        let client = await connect(mock, { lndVersion: '0.20' });
+        let acceptor = client.channelAcceptor();
+        let request = await new Promise((resolve, reject) =>
+          acceptor.once('data', resolve).once('error', reject)
+        );
+        acceptor.write({ pending_chan_id: request.pending_chan_id, accept: false });
+        await new Promise(resolve => acceptor.on('end', resolve).resume());
+        expect(request.commitment_type).to.equal(7);
+      });
     });
   });
 });
@@ -510,6 +553,37 @@ describe('lnd-async client surface', () => {
       expect(known.type).to.equal('CLOSED_CHANNEL');
       expect(known.channel).to.equal('closed_channel');
       expect(known.closed_channel.chan_id).to.equal('5');
+    });
+
+    it('are decoded into numbers deep in a list of a unary response', async () => {
+      // encode() of protobufjs writes the numbers as they are, values the protos do not have too
+      let { getRoot } = require('../lib/common');
+      let root = getRoot(getLine('0.20'));
+      let encode = (type, message) =>
+        root
+          .lookupType(type)
+          .encode(message)
+          .finish();
+      let channels = (await method('0.20', 'Lightning', 'ListChannels')).responseDeserialize(
+        encode('lnrpc.ListChannelsResponse', {
+          channels: [
+            { chan_id: 1, commitment_type: 3 },
+            { chan_id: 2, commitment_type: 99 },
+          ],
+        })
+      ).channels;
+      expect(channels.map(c => c.commitment_type)).to.deep.equal(['ANCHORS', 99]);
+      let payments = (await method('0.20', 'Lightning', 'ListPayments')).responseDeserialize(
+        encode('lnrpc.ListPaymentsResponse', {
+          payments: [
+            { payment_index: 1, status: 2 },
+            { payment_index: 2, status: 2, htlcs: [{ attempt_id: 1, failure: { code: 77 } }] },
+          ],
+        })
+      ).payments;
+      expect(payments.map(p => p.status)).to.deep.equal(['SUCCEEDED', 'SUCCEEDED']);
+      expect(payments[1].htlcs[0].failure.code).to.equal(77);
+      expect(payments[1].htlcs[0].status).to.equal('IN_FLIGHT');
     });
 
     it('are decoded into numbers in nested messages and with longsAsNumbers', async () => {
@@ -616,6 +690,22 @@ describe('lnd-async client surface', () => {
     expect(JSON.parse(JSON.stringify(set))).to.include({ _incoming_htlc_id: 'incoming_htlc_id' });
   });
 
+  it('rejects an unsupported value of strict', async () => {
+    for (let strict of ['warning', 'Warn', 'true', 'false', 1, {}]) {
+      let err = await sut.connect({ ...base, strict }).then(
+        () => null,
+        e => e
+      );
+      expect(err, String(strict)).to.be.instanceOf(TypeError);
+      expect(err.message).to.match(
+        /^Unsupported strict option .*; use true, false, 'warn' or a function$/
+      );
+    }
+    for (let strict of [undefined, null, false, true, 'warn', () => {}]) {
+      await sut.connect({ ...base, strict });
+    }
+  });
+
   it('rejects an unsupported lndVersion', async () => {
     let err = await sut.connect({ ...base, lndVersion: '0.17' }).then(
       () => null,
@@ -702,6 +792,12 @@ describe('strict mode validation', () => {
     for (let bad of ['1e3', '0x10', ' 40', '40.0', '', '+40', '1'.repeat(400)]) {
       rejects(() => updatePolicy({ time_lock_delta: bad }), `time_lock_delta: ${expected}`);
     }
+    let {
+      requestSerialize: sendPaymentV2,
+    } = client.lnrpc.allServices.Router.constructor.service.SendPaymentV2;
+    expect(sendPaymentV2({ final_cltv_delta: '-2147483648', max_parts: '007' })).to.deep.equal(
+      sendPaymentV2({ final_cltv_delta: -2147483648, max_parts: 7 })
+    );
     // What protobufjs would send instead
     expect(requestSerialize({ fee_rate_ppm: '4294967296' })).to.deep.equal(
       requestSerialize({ fee_rate_ppm: 0 })
@@ -817,8 +913,20 @@ describe('strict mode validation', () => {
   it('checks map keys, including binary keys copied from a response', () => {
     rejects(
       () => sendPayment({ dest_custom_records: { '-1': 'YQ==' } }),
-      'dest_custom_records["-1"]: expected an integer map key (uint64)'
+      'dest_custom_records["-1"]: expected an integer map key (uint64) from 0 to 18446744073709551615'
     );
+    // protobufjs would send these keys as 65536 and 0
+    rejects(
+      () => sendPayment({ dest_custom_records: { '18446744073709617152': 'YQ==' } }),
+      'dest_custom_records["18446744073709617152"]: expected an integer map key (uint64) from 0'
+    );
+    let addInvoice = request => validators.get('Lightning.addInvoice').validate(request);
+    rejects(
+      () => addInvoice({ features: { 4294967296: { name: 'x' } } }),
+      'lnrpc.Invoice.features["4294967296"]: expected an integer map key (uint32) from 0 to 4294967295'
+    );
+    addInvoice({ features: { 0: {}, 4294967295: {} } });
+    sendPayment({ dest_custom_records: { '18446744073709551615': 'YQ==', '065536': 'YQ==' } });
     rejects(
       () => sendPayment({ dest_custom_records: { 'laÆF\u0001\u0000\u0000\u0000': 'YQ==' } }),
       'this looks like a key decoded from a response, convert it to a decimal string first'

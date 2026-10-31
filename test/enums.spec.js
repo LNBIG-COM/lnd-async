@@ -77,6 +77,47 @@ describe('enum values the protos do not have', () => {
     expect(decoded).to.not.have.property('chosen_leaf');
   });
 
+  // Each value is the only unknown one in its response, so each place has to be looked into
+  for (let [where, tree, read] of [
+    ['a field', { color: 2 }, d => d.color],
+    ['a repeated field', { colors: [0, 3] }, d => d.colors[1]],
+    ['a map', { by_name: { a: 1, b: 4 } }, d => d.by_name.b],
+    ['a message', { leaf: { color: 5 } }, d => d.leaf.color],
+    ['a repeated field of a message', { leaf: { colors: [1, 6] } }, d => d.leaf.colors[1]],
+    ['a repeated message', { leaves: [{ color: 1 }, { color: 5 }] }, d => d.leaves[1].color],
+    [
+      'a map of messages',
+      { by_id: { 1: { color: 1 }, 7: { color: 5 } } },
+      // the keys are 64-bit, decoded into binary strings
+      d => Object.values(d.by_id).find(leaf => leaf.color !== 'GREEN').color,
+    ],
+    ['a oneof', { chosen: 8 }, d => d.chosen],
+    ['a message in a oneof', { chosen_leaf: { colors: [11] } }, d => d.chosen_leaf.colors[0]],
+    ['a proto3 optional field', { maybe: 9 }, d => d.maybe],
+    [
+      'a nested message of the same type',
+      { child: { child: { color: 10 } } },
+      d => d.child.child.color,
+    ],
+  ]) {
+    it(`are found alone in ${where}`, () => {
+      expect(read(deserializer('test.Tree')(encode('test.Tree', tree)))).to.be.a('number');
+    });
+  }
+
+  it('leave unset members of a oneof and unset optional fields absent', () => {
+    let decoded = deserializer('test.Tree')(
+      encode('test.Tree', { colors: [5], child: { colors: [6] } })
+    );
+    expect(decoded.colors).to.deep.equal([5]);
+    expect(decoded.child.colors).to.deep.equal([6]);
+    for (let tree of [decoded, decoded.child]) {
+      for (let name of ['chosen', 'chosen_leaf', 'choice', 'maybe', '_maybe']) {
+        expect(tree, name).to.not.have.property(name);
+      }
+    }
+  });
+
   it('do not change a response without them', () => {
     let tree = { color: 1, leaves: [{ color: 1 }], maybe: 0, child: { chosen: 1 } };
     let wire = encode('test.Tree', tree);

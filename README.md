@@ -174,7 +174,13 @@ The client tells its line as `client.lndVersion` (`'0.21'` for `lndVersion: '0.2
 ```javascript
 let client = await lnd.connect({ ...options, lndVersion: '0.21' });
 let { version } = await client.getInfo({});
-if (lnd.resolveLndVersion(version) !== client.lndVersion) console.warn(`LND ${version}, protos of ${client.lndVersion}`);
+let line;
+try {
+  line = lnd.resolveLndVersion(version);
+} catch (err) {
+  line = null; // a line lnd-async does not bundle, e.g. a newer LND
+}
+if (line !== client.lndVersion) console.warn(`LND ${version}, protos of ${client.lndVersion}`);
 ```
 
 `lnd.protoDir(lndVersion)` is the directory with the `.proto` files of a line, for code that loads them itself (a test that encodes a request, a tool). Do not use a path inside the package: `lib/original-lnd-protos` holds the protos of the default line 0.20, not the ones of a client made with `lndVersion: '0.21'`.
@@ -222,7 +228,7 @@ await client.addInvoice({ valeu: 1000 });
 
 Strict mode rejects unknown fields, values of the wrong type, integers out of the range of their field (an integer is a number or a decimal string, a 64-bit one also a `Long`; numbers beyond 2^53 must be passed as decimal strings), `bytes` that are neither a `Buffer`/`Uint8Array` nor standard base64, unknown enum values, and more than one member of a `oneof`, in nested messages, arrays and maps too. The error tells where the problem is, e.g. `routerrpc.SendPaymentRequest.route_hints[0].hop_hints[0].fee_base_msat`. A unary call rejects with `lnd.ValidationError` (a `TypeError`), a streaming call throws, and each `write()` to a bidirectional stream is checked. Nothing is sent when a request is rejected. Responses are not checked. The error tells the method as `error.method` (`'Lightning.addInvoice'`).
 
-To bring strict mode into existing code step by step, let it report instead of reject: with `strict: 'warn'` an invalid request is sent as without strict mode and the error is emitted as a process warning (printed to stderr, or caught with `process.on('warning')`); with a function the function gets the error, and the request is sent unless the function throws.
+To bring strict mode into existing code step by step, let it report instead of reject: with `strict: 'warn'` an invalid request is sent as without strict mode and the error is emitted as a process warning (printed to stderr, or caught with `process.on('warning')`); with a function the function gets the error, and the request is sent unless the function throws. `connect()` rejects any other value of `strict`.
 
 ```javascript
 let client = await lnd.connect({ strict: error => logger.warn(`${error.method}: ${error.message}`) });
