@@ -4,6 +4,14 @@ This library simplifies connecting to the Bitcoin Lightning Network Daemon via g
 
 This library bundles the protos of LND 0.18, 0.19, 0.20 and 0.21 and uses 0.20 (v0.20.6-beta) unless told otherwise, see [Choosing the LND version](#choosing-the-lnd-version). It ships [TypeScript](#typescript) declarations and an optional [strict mode](#strict-mode) that validates requests before they are sent.
 
+Install it from GitHub, by the tag of a release:
+
+```bash
+npm install github:LNBIG-COM/lnd-async#v5.1.0
+```
+
+The `lnd-async` package in the npm registry is another one: version 4.2.2 of altangent/lnd-async, without the changes listed under [Versions](#versions) after 4.2.2.
+
 The default behavior assumes LND is running on `localhost` port `10009`. It also assumes that macaroons are enabled and the `tls.cert` and `admin.macaroon` are found in the OS specific default data paths.
 
 To establish a connection to gRPC `localhost:10009` with macaroons:
@@ -254,12 +262,22 @@ Sent back unconverted, every such key becomes 0 (strict mode rejects it instead)
 
 ## Versions
 
+- 5.1.0 - An enum value the protos of the line do not have (sent by a newer LND) comes as its number instead of `undefined`:
+          on LND 0.21 with the default line 0.20 the `CHANNEL_UPDATE` events of `subscribeChannelEvents` were `{ type: undefined }`.
+          The TypeScript declarations type enums of responses as their names or a `number`, so an exhaustive `switch` over one,
+          or passing one back in a request, now has to deal with a number,
+          `client.lndVersion` and the exports `resolveLndVersion()`, `protoDir()` and `validate()`,
+          `strict: 'warn'` or a function reports invalid requests instead of rejecting them, `ValidationError` tells the `method`,
+          strict mode accepts decimal strings in 32-bit integer fields, checks the range of integer map keys
+          and makes `connect()` reject an unsupported value of `strict`; its messages about integers now tell
+          the accepted forms (`expected an integer from 0 to 4294967295 (uint32) as a number or a decimal string`),
+          the package metadata points at LNBIG-COM/lnd-async
 - 5.0.0 - TypeScript declarations for all services and messages,
           bundled protos of LND 0.18, 0.19, 0.20 and 0.21 with the `lndVersion` option of `.connect()` (default: 0.20, as before),
           opt-in `strict` validation of requests,
           `deleteMacaroonID` and `registerRPCMiddleware` are now available on the client (they were missing because of their capital letters),
           requires Node.js 12.10 or newer (as `@grpc/grpc-js` does).
-          A major version because it is the first npm release after 4.2.2: it brings the move from `grpc` to `@grpc/grpc-js` (4.2.4)
+          A major version because it is the first release after 4.2.2: it brings the move from `grpc` to `@grpc/grpc-js` (4.2.4)
           and the newer LND protos of 4.2.3 and 4.3.1, and TypeScript projects now get type checking of their calls
 - 4.3.1 - Updated the protocol in accordance with LND v0.20.6-beta,
           the npm package now contains only `lib/` (plus `README.md`, `LICENSE`, `package.json`)
