@@ -576,6 +576,46 @@ describe('lnd-async client surface', () => {
     expect(() => sut.protoDir('0.17')).to.throw('Unsupported lndVersion "0.17"');
   });
 
+  it('leaves a method the line does not have undefined, for typeof checks', async () => {
+    let flat = lndVersion => {
+      let line = getLine(lndVersion);
+      return new Set([...line.streamApis, ...line.callbackApis]);
+    };
+    let everyLine = new Set(sut.supportedLndVersions.flatMap(v => [...flat(v)]));
+    for (let lndVersion of sut.supportedLndVersions) {
+      let client = await sut.connect({ ...base, lndVersion });
+      let has = flat(lndVersion);
+      for (let name of everyLine) {
+        expect(typeof client[name], `${lndVersion} ${name}`).to.equal(
+          has.has(name) ? 'function' : 'undefined'
+        );
+      }
+    }
+    let client = await sut.connect({ ...base, lndVersion: '0.21' });
+    expect(() => client.sendPaymentSync({})).to.throw(TypeError, 'is not a function');
+  });
+
+  it('names the member of a proto3 optional field that is set', async () => {
+    let client = await sut.connect({ ...base, lndVersion: '0.21' });
+    let {
+      responseSerialize,
+      responseDeserialize,
+    } = client.lnrpc.allServices.Lightning.constructor.service.ForwardingHistory;
+    let response = responseDeserialize(
+      responseSerialize({
+        forwarding_events: [{ chan_id_in: '1', incoming_htlc_id: '5' }, { chan_id_in: '2' }],
+      })
+    );
+    let [set, unset] = response.forwarding_events;
+    expect(set.incoming_htlc_id).to.equal('5');
+    expect(set._incoming_htlc_id).to.equal('incoming_htlc_id');
+    expect(set).to.not.have.property('outgoing_htlc_id');
+    expect(set).to.not.have.property('_outgoing_htlc_id');
+    expect(unset).to.not.have.property('incoming_htlc_id');
+    expect(unset).to.not.have.property('_incoming_htlc_id');
+    expect(JSON.parse(JSON.stringify(set))).to.include({ _incoming_htlc_id: 'incoming_htlc_id' });
+  });
+
   it('rejects an unsupported lndVersion', async () => {
     let err = await sut.connect({ ...base, lndVersion: '0.17' }).then(
       () => null,

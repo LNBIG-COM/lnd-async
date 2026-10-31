@@ -111,6 +111,10 @@ stream.on('error', (e) => {
 })
 ```
 
+### Oneofs and optional fields
+
+A response holds only the member of a `oneof` that LND has set, and a property named after the `oneof` tells which one it is: an `OpenStatusUpdate` with `chan_open` has `update: 'chan_open'`. A proto3 `optional` field is a `oneof` of its own, named after the field with a leading underscore: an unset `incoming_htlc_id` of a `ForwardingEvent` (LND 0.19 and later) is absent, a set one comes with `_incoming_htlc_id: 'incoming_htlc_id'`. Leave these properties out when you store a response as JSON.
+
 ### Long integer treatment
 
 The JavaScript Number type internally stores values as IEEE 754 floating point values. The max safe integer value is 2^53-1 which can result in data loss for 64-bit integers.
@@ -150,6 +154,8 @@ let client = await lnd.connect({ lndVersion: '0.21' });
 await client.sendOnionMessage({ peer, onion }); // added in 0.21
 client.sendPaymentSync;                         // undefined: removed in 0.21
 ```
+
+A method the line does not have is `undefined` on the client, so calling it fails with `TypeError: client.sendPaymentSync is not a function`, and `typeof client.sendPaymentSync === 'function'` tells whether the line has it. TypeScript reports such a call at compile time.
 
 Without `lndVersion` the default line is used, so existing code works as before. New lines are added in minor versions of `lnd-async` (5.1.0, 5.2.0, ...) and never change the default; the default line changes only in a new major version, because a newer LND line may remove RPCs and fields. **Pass `lndVersion` explicitly** to make your code independent of the default. The list of lines is available as `lnd.supportedLndVersions`, the default as `lnd.defaultLndVersion`.
 
