@@ -163,7 +163,7 @@ Object.values(probe.lnrpc.allServices).forEach(service => service.close());
 let client = await lnd.connect({ ...options, lndVersion: version }); // rejects if the line is not bundled
 ```
 
-Use the line of your node. Protobuf messages are compatible across versions, but an RPC the node does not have fails with `UNIMPLEMENTED`, and a request field the bundled protos do not know is dropped without an error.
+Use the line of your node. Protobuf messages are compatible across versions, but an RPC the node does not have fails with `UNIMPLEMENTED`, and a request field the bundled protos do not know is dropped without an error. So is a response field: on LND 0.21 with the line 0.20 the `CHANNEL_UPDATE` events of `subscribeChannelEvents` come as `{ type: 7 }`, without their `updated_channel`. An enum value the protos of the line do not have comes as its number (7 here), not as a name.
 
 ### TypeScript
 
@@ -183,7 +183,7 @@ await client.addInvoice({ valeu: 1000 }); // error: 'valeu' does not exist in ty
 client.subscribeInvoices({}).on('data', (invoice: lnrpc.Invoice__Output) => invoice.r_hash.toString('hex'));
 ```
 
-- For a message `Foo` there are two types. `Foo` is what a request accepts: every field is optional, 64-bit integers may be a number, a decimal string or a `Long`, `bytes` a `Buffer`, a `Uint8Array` or a base64 string, enums a name or a number. `Foo__Output` is what a response contains: every field is present (unset ones hold the proto default), an unset message field is `null`, the members of a `oneof` are optional and a property named after the `oneof` tells which one is set, 64-bit integers are strings, `bytes` are `Buffer`s and enums are names.
+- For a message `Foo` there are two types. `Foo` is what a request accepts: every field is optional, 64-bit integers may be a number, a decimal string or a `Long`, `bytes` a `Buffer`, a `Uint8Array` or a base64 string, enums a name or a number. `Foo__Output` is what a response contains: every field is present (unset ones hold the proto default), an unset message field is `null`, the members of a `oneof` are optional and a property named after the `oneof` tells which one is set, 64-bit integers are strings, `bytes` are `Buffer`s and enums are names (or numbers, for values the protos of the line do not have).
 - Field names are the snake_case names of the protos, as at runtime.
 - The comments of the LND protos are included, and deprecated fields and RPCs are marked `@deprecated`.
 - The client type follows the options: `connect({ lndVersion: '0.21' })` has no `sendPaymentSync`, `connect({ longsAsNumbers: true })` returns 64-bit integers as `number`.

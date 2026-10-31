@@ -295,6 +295,42 @@ describe('lnd-async against a mock LND', function() {
         await mock.close();
       }
     });
+
+    it('decodes an enum value of a newer LND into its number', async () => {
+      let mock = await startMockLnd({
+        certificate,
+        lndVersion: '0.21',
+        handlers: {
+          Lightning: {
+            SubscribeChannelEvents: call => {
+              call.write({
+                type: 'CHANNEL_UPDATE',
+                updated_channel: { channel: { chan_id: '1' } },
+              });
+              call.write({ type: 'ACTIVE_CHANNEL', active_channel: { funding_txid_str: 'ab' } });
+              call.end();
+            },
+          },
+        },
+      });
+      try {
+        let client = await connect(mock, { lndVersion: '0.20' });
+        let events = [];
+        await new Promise((resolve, reject) =>
+          client
+            .subscribeChannelEvents({})
+            .on('data', event => events.push(event))
+            .on('error', reject)
+            .on('end', resolve)
+        );
+        // updated_channel is a field the 0.20 protos do not have, so it is dropped
+        expect(events[0]).to.deep.equal({ type: 7 });
+        expect(events[1].type).to.equal('ACTIVE_CHANNEL');
+        expect(events[1].active_channel.funding_txid_str).to.equal('ab');
+      } finally {
+        await mock.close();
+      }
+    });
   });
 });
 
@@ -371,6 +407,54 @@ describe('lnd-async client surface', () => {
     expect(client.sendPaymentSync).to.equal(undefined);
     let old = await sut.connect({ ...base, lndVersion: 'v0.18.5-beta' });
     expect(old.Lightning.deleteCanceledInvoice).to.equal(undefined);
+  });
+
+  describe('enum values the line does not have', () => {
+    // The method definition the client decodes responses with
+    let method = async (lndVersion, service, rpc) => {
+      let client = await sut.connect({ ...base, lndVersion });
+      return client.lnrpc.allServices[service].constructor.service[rpc];
+    };
+
+    it('are decoded into numbers, known values stay names', async () => {
+      let newer = await method('0.21', 'Lightning', 'SubscribeChannelEvents');
+      let older = await method('0.20', 'Lightning', 'SubscribeChannelEvents');
+      let wire = newer.responseSerialize({
+        type: 'CHANNEL_UPDATE',
+        updated_channel: { channel: { chan_id: '123', active: true } },
+      });
+      expect(newer.responseDeserialize(wire).type).to.equal('CHANNEL_UPDATE');
+      expect(older.responseDeserialize(wire)).to.deep.equal({ type: 7 });
+      let known = older.responseDeserialize(
+        newer.responseSerialize({ type: 'CLOSED_CHANNEL', closed_channel: { chan_id: '5' } })
+      );
+      expect(known.type).to.equal('CLOSED_CHANNEL');
+      expect(known.channel).to.equal('closed_channel');
+      expect(known.closed_channel.chan_id).to.equal('5');
+    });
+
+    it('are decoded into numbers in nested messages and with longsAsNumbers', async () => {
+      let newer = await method('0.21', 'Router', 'SubscribeHtlcEvents');
+      let wire = newer.responseSerialize({
+        incoming_channel_id: '9',
+        event_type: 'FORWARD',
+        link_fail_event: {
+          info: { incoming_amt_msat: '1000' },
+          wire_failure: 'TEMPORARY_CHANNEL_FAILURE',
+          failure_detail: 'INVOICE_ALREADY_SETTLED',
+        },
+      });
+      let event = (await method('0.18', 'Router', 'SubscribeHtlcEvents')).responseDeserialize(wire);
+      expect(event.event_type).to.equal('FORWARD');
+      expect(event.incoming_channel_id).to.equal('9');
+      expect(event.link_fail_event.wire_failure).to.equal('TEMPORARY_CHANNEL_FAILURE');
+      expect(event.link_fail_event.failure_detail).to.equal(23);
+      let client = await sut.connect({ ...base, lndVersion: '0.18', longsAsNumbers: true });
+      let numbers = client.lnrpc.allServices.Router.constructor.service.SubscribeHtlcEvents;
+      let decoded = numbers.responseDeserialize(wire);
+      expect(decoded.incoming_channel_id).to.equal(9);
+      expect(decoded.link_fail_event.failure_detail).to.equal(23);
+    });
   });
 
   it('rejects an unsupported lndVersion', async () => {

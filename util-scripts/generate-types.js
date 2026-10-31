@@ -7,6 +7,7 @@
 // (keepCase, longs: String or Number, enums: String, defaults, oneofs):
 //   Foo                 what a request accepts (every field optional, permissive scalar types)
 //   Foo__Output<L>      what a response contains, L being the type of 64-bit integers
+// An enum is a name in a response, or a number for a value the line does not have (lib/enums.js).
 // The service surface follows lib/lnd-async.js and lib/all-api.js: lowerCamelCase methods,
 // a Promise for unary RPCs, a grpc-js stream for streaming ones.
 //
@@ -32,6 +33,9 @@ const NUMBER_TYPES = new Set([
   'sfixed32',
 ]);
 const LONG_TYPES = new Set(['int64', 'uint64', 'sint64', 'fixed64', 'sfixed64']);
+const UNKNOWN_ENUM_NOTE = [
+  'A number is a value the protos of this line do not have (sent by a newer LND).',
+];
 const LONG_MAP_KEY_NOTE = [
   'Note: the keys of this map are 64-bit integers that protobufjs decodes into 8-character',
   'binary strings (the bytes of the number, least significant first), not decimal strings.',
@@ -182,12 +186,14 @@ function renderEnum(e, indent) {
       return `- \`${n}\`${comment ? ': ' + comment : ''}${deprecated ? ' (deprecated)' : ''}`;
     });
   const doc = jsdoc(indent, e.comment, { deprecated: isDeprecated(e), extra });
+  const outputExtra = extra.length ? [...extra, '', ...UNKNOWN_ENUM_NOTE] : UNKNOWN_ENUM_NOTE;
+  const outputDoc = jsdoc(indent, e.comment, { deprecated: isDeprecated(e), extra: outputExtra });
   const quoted = names.map(n => `'${n}'`);
   return [
     ...doc,
     `${indent}export type ${e.name} = ${quoted.concat(numbers.map(String)).join(' | ')};`,
-    ...doc,
-    `${indent}export type ${e.name}__Output = ${quoted.join(' | ')};`,
+    ...outputDoc,
+    `${indent}export type ${e.name}__Output = ${quoted.join(' | ')} | number;`,
   ];
 }
 

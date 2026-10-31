@@ -19,7 +19,13 @@ async function responses() {
 
   const invoice = await client.lookupInvoice({ r_hash_str: 'ab' });
   expectType<Equal<typeof invoice.r_hash, Buffer>>();
-  expectType<Equal<typeof invoice.state, 'OPEN' | 'SETTLED' | 'CANCELED' | 'ACCEPTED'>>();
+  expectType<Equal<typeof invoice.state, 'OPEN' | 'SETTLED' | 'CANCELED' | 'ACCEPTED' | number>>();
+  // An enum value the line does not have (CHANNEL_UPDATE of LND 0.21) arrives as a number...
+  const update: lnrpc.ChannelEventUpdate.UpdateType__Output = 7;
+  // ...which a request does not take: the line cannot send it
+  // @ts-expect-error not a value of the enum in this line
+  const request: lnrpc.ChannelEventUpdate.UpdateType = 7;
+  void [update, request];
   // A message field is null when it is not set
   const channel = await client.getChanInfo({ chan_id: '1' });
   expectType<Equal<typeof channel.node1_policy, lnrpc.RoutingPolicy__Output<string> | null>>();

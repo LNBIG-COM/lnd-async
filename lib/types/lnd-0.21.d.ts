@@ -867,8 +867,10 @@ export namespace invoicesrpc {
    * - `DEFAULT`: The default look up modifier, no look up behavior is changed.
    * - `HTLC_SET_ONLY`: Indicates that when a look up is done based on a set_id, then only that set of HTLCs related to that set ID should be returned.
    * - `HTLC_SET_BLANK`: Indicates that when a look up is done using a payment_addr, then no HTLCs related to the payment_addr should be returned. This is useful when one wants to be able to obtain the set of associated setIDs with a given invoice, then look up the sub-invoices "projected" by that set ID.
+   *
+   * A number is a value the protos of this line do not have (sent by a newer LND).
    */
-  export type LookupModifier__Output = 'DEFAULT' | 'HTLC_SET_ONLY' | 'HTLC_SET_BLANK';
+  export type LookupModifier__Output = 'DEFAULT' | 'HTLC_SET_ONLY' | 'HTLC_SET_BLANK' | number;
   export interface SettleInvoiceMsg {
     /**
      * Externally discovered pre-image that should be used to settle the hold
@@ -1098,8 +1100,10 @@ export namespace lnrpc {
    * - `p2wkh`: Pay to witness key hash (`WITNESS_PUBKEY_HASH` = 0)
    * - `np2wkh`: Pay to nested witness key hash (`NESTED_PUBKEY_HASH` = 1)
    * - `p2tr`: Pay to taproot pubkey (`TAPROOT_PUBKEY` = 4)
+   *
+   * A number is a value the protos of this line do not have (sent by a newer LND).
    */
-  export type AddressType__Output = 'WITNESS_PUBKEY_HASH' | 'NESTED_PUBKEY_HASH' | 'UNUSED_WITNESS_PUBKEY_HASH' | 'UNUSED_NESTED_PUBKEY_HASH' | 'TAPROOT_PUBKEY' | 'UNUSED_TAPROOT_PUBKEY';
+  export type AddressType__Output = 'WITNESS_PUBKEY_HASH' | 'NESTED_PUBKEY_HASH' | 'UNUSED_WITNESS_PUBKEY_HASH' | 'UNUSED_NESTED_PUBKEY_HASH' | 'TAPROOT_PUBKEY' | 'UNUSED_TAPROOT_PUBKEY' | number;
   export interface AliasMap {
     /**
      * For non-zero-conf channels, this is the confirmed SCID. Otherwise, this is
@@ -2886,7 +2890,10 @@ export namespace lnrpc {
   }
   export namespace ChannelCloseSummary {
     export type ClosureType = 'COOPERATIVE_CLOSE' | 'LOCAL_FORCE_CLOSE' | 'REMOTE_FORCE_CLOSE' | 'BREACH_CLOSE' | 'FUNDING_CANCELED' | 'ABANDONED' | 0 | 1 | 2 | 3 | 4 | 5;
-    export type ClosureType__Output = 'COOPERATIVE_CLOSE' | 'LOCAL_FORCE_CLOSE' | 'REMOTE_FORCE_CLOSE' | 'BREACH_CLOSE' | 'FUNDING_CANCELED' | 'ABANDONED';
+    /**
+     * A number is a value the protos of this line do not have (sent by a newer LND).
+     */
+    export type ClosureType__Output = 'COOPERATIVE_CLOSE' | 'LOCAL_FORCE_CLOSE' | 'REMOTE_FORCE_CLOSE' | 'BREACH_CLOSE' | 'FUNDING_CANCELED' | 'ABANDONED' | number;
   }
   export interface ChannelCloseUpdate {
     'closing_txid'?: $BytesIn;
@@ -3120,7 +3127,10 @@ export namespace lnrpc {
   }
   export namespace ChannelEventUpdate {
     export type UpdateType = 'OPEN_CHANNEL' | 'CLOSED_CHANNEL' | 'ACTIVE_CHANNEL' | 'INACTIVE_CHANNEL' | 'PENDING_OPEN_CHANNEL' | 'FULLY_RESOLVED_CHANNEL' | 'CHANNEL_FUNDING_TIMEOUT' | 'CHANNEL_UPDATE' | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
-    export type UpdateType__Output = 'OPEN_CHANNEL' | 'CLOSED_CHANNEL' | 'ACTIVE_CHANNEL' | 'INACTIVE_CHANNEL' | 'PENDING_OPEN_CHANNEL' | 'FULLY_RESOLVED_CHANNEL' | 'CHANNEL_FUNDING_TIMEOUT' | 'CHANNEL_UPDATE';
+    /**
+     * A number is a value the protos of this line do not have (sent by a newer LND).
+     */
+    export type UpdateType__Output = 'OPEN_CHANNEL' | 'CLOSED_CHANNEL' | 'ACTIVE_CHANNEL' | 'INACTIVE_CHANNEL' | 'PENDING_OPEN_CHANNEL' | 'FULLY_RESOLVED_CHANNEL' | 'CHANNEL_FUNDING_TIMEOUT' | 'CHANNEL_UPDATE' | number;
   }
   export interface ChannelFeeReport {
     /**
@@ -3716,8 +3726,10 @@ export namespace lnrpc {
    * - `STRATEGY_USE_GLOBAL_CONFIG`: Use the coin selection strategy defined in the global configuration (lnd.conf).
    * - `STRATEGY_LARGEST`: Select the largest available coins first during coin selection.
    * - `STRATEGY_RANDOM`: Randomly select the available coins during coin selection.
+   *
+   * A number is a value the protos of this line do not have (sent by a newer LND).
    */
-  export type CoinSelectionStrategy__Output = 'STRATEGY_USE_GLOBAL_CONFIG' | 'STRATEGY_LARGEST' | 'STRATEGY_RANDOM';
+  export type CoinSelectionStrategy__Output = 'STRATEGY_USE_GLOBAL_CONFIG' | 'STRATEGY_LARGEST' | 'STRATEGY_RANDOM' | number;
   /**
    * - `UNKNOWN_COMMITMENT_TYPE`: Returned when the commitment type isn't known or unavailable.
    * - `LEGACY`: A channel using the legacy commitment format having tweaked to_remote keys. This value is only reported for channels that already exist. It is rejected as an input when opening a channel, since lnd no longer opens or accepts channels of this type.
@@ -3740,8 +3752,10 @@ export namespace lnrpc {
    * - `SIMPLE_TAPROOT_FINAL`: Deprecated alias for TAPROOT, preserved so existing clients that select the production taproot channel type by its historic name continue to compile and serialize against the same wire value.
    * - `SIMPLE_TAPROOT`: A legacy taproot channel type that uses musig2 for the funding output and the new tapscript features, but with development scripts and the staging feature bits. Retained for compatibility with peers that have not upgraded to TAPROOT; new integrations should prefer TAPROOT.
    * - `SIMPLE_TAPROOT_OVERLAY`: Identical to the SIMPLE_TAPROOT channel type, but with extra functionality. This channel type also commits to additional meta data in the tapscript leaves for the scripts in a channel.
+   *
+   * A number is a value the protos of this line do not have (sent by a newer LND).
    */
-  export type CommitmentType__Output = 'UNKNOWN_COMMITMENT_TYPE' | 'LEGACY' | 'STATIC_REMOTE_KEY' | 'ANCHORS' | 'SCRIPT_ENFORCED_LEASE' | 'TAPROOT' | 'SIMPLE_TAPROOT_FINAL' | 'SIMPLE_TAPROOT' | 'SIMPLE_TAPROOT_OVERLAY';
+  export type CommitmentType__Output = 'UNKNOWN_COMMITMENT_TYPE' | 'LEGACY' | 'STATIC_REMOTE_KEY' | 'ANCHORS' | 'SCRIPT_ENFORCED_LEASE' | 'TAPROOT' | 'SIMPLE_TAPROOT_FINAL' | 'SIMPLE_TAPROOT' | 'SIMPLE_TAPROOT_OVERLAY' | number;
   export interface ConnectPeerRequest {
     /**
      * Lightning address of the peer to connect to.
@@ -4219,8 +4233,10 @@ export namespace lnrpc {
      * - `INTERNAL_FAILURE`: An internal error occurred.
      * - `UNKNOWN_FAILURE`: The error source is known, but the failure itself couldn't be decoded.
      * - `UNREADABLE_FAILURE`: An unreadable failure result is returned if the received failure message cannot be decrypted. In that case the error source is unknown.
+     *
+     * A number is a value the protos of this line do not have (sent by a newer LND).
      */
-    export type FailureCode__Output = 'RESERVED' | 'INCORRECT_OR_UNKNOWN_PAYMENT_DETAILS' | 'INCORRECT_PAYMENT_AMOUNT' | 'FINAL_INCORRECT_CLTV_EXPIRY' | 'FINAL_INCORRECT_HTLC_AMOUNT' | 'FINAL_EXPIRY_TOO_SOON' | 'INVALID_REALM' | 'EXPIRY_TOO_SOON' | 'INVALID_ONION_VERSION' | 'INVALID_ONION_HMAC' | 'INVALID_ONION_KEY' | 'AMOUNT_BELOW_MINIMUM' | 'FEE_INSUFFICIENT' | 'INCORRECT_CLTV_EXPIRY' | 'CHANNEL_DISABLED' | 'TEMPORARY_CHANNEL_FAILURE' | 'REQUIRED_NODE_FEATURE_MISSING' | 'REQUIRED_CHANNEL_FEATURE_MISSING' | 'UNKNOWN_NEXT_PEER' | 'TEMPORARY_NODE_FAILURE' | 'PERMANENT_NODE_FAILURE' | 'PERMANENT_CHANNEL_FAILURE' | 'EXPIRY_TOO_FAR' | 'MPP_TIMEOUT' | 'INVALID_ONION_PAYLOAD' | 'INVALID_ONION_BLINDING' | 'INTERNAL_FAILURE' | 'UNKNOWN_FAILURE' | 'UNREADABLE_FAILURE';
+    export type FailureCode__Output = 'RESERVED' | 'INCORRECT_OR_UNKNOWN_PAYMENT_DETAILS' | 'INCORRECT_PAYMENT_AMOUNT' | 'FINAL_INCORRECT_CLTV_EXPIRY' | 'FINAL_INCORRECT_HTLC_AMOUNT' | 'FINAL_EXPIRY_TOO_SOON' | 'INVALID_REALM' | 'EXPIRY_TOO_SOON' | 'INVALID_ONION_VERSION' | 'INVALID_ONION_HMAC' | 'INVALID_ONION_KEY' | 'AMOUNT_BELOW_MINIMUM' | 'FEE_INSUFFICIENT' | 'INCORRECT_CLTV_EXPIRY' | 'CHANNEL_DISABLED' | 'TEMPORARY_CHANNEL_FAILURE' | 'REQUIRED_NODE_FEATURE_MISSING' | 'REQUIRED_CHANNEL_FEATURE_MISSING' | 'UNKNOWN_NEXT_PEER' | 'TEMPORARY_NODE_FAILURE' | 'PERMANENT_NODE_FAILURE' | 'PERMANENT_CHANNEL_FAILURE' | 'EXPIRY_TOO_FAR' | 'MPP_TIMEOUT' | 'INVALID_ONION_PAYLOAD' | 'INVALID_ONION_BLINDING' | 'INTERNAL_FAILURE' | 'UNKNOWN_FAILURE' | 'UNREADABLE_FAILURE' | number;
   }
   export interface Feature {
     'name'?: string;
@@ -4233,7 +4249,10 @@ export namespace lnrpc {
     'is_known': boolean;
   }
   export type FeatureBit = 'DATALOSS_PROTECT_REQ' | 'DATALOSS_PROTECT_OPT' | 'INITIAL_ROUING_SYNC' | 'UPFRONT_SHUTDOWN_SCRIPT_REQ' | 'UPFRONT_SHUTDOWN_SCRIPT_OPT' | 'GOSSIP_QUERIES_REQ' | 'GOSSIP_QUERIES_OPT' | 'TLV_ONION_REQ' | 'TLV_ONION_OPT' | 'EXT_GOSSIP_QUERIES_REQ' | 'EXT_GOSSIP_QUERIES_OPT' | 'STATIC_REMOTE_KEY_REQ' | 'STATIC_REMOTE_KEY_OPT' | 'PAYMENT_ADDR_REQ' | 'PAYMENT_ADDR_OPT' | 'MPP_REQ' | 'MPP_OPT' | 'WUMBO_CHANNELS_REQ' | 'WUMBO_CHANNELS_OPT' | 'ANCHORS_REQ' | 'ANCHORS_OPT' | 'ANCHORS_ZERO_FEE_HTLC_REQ' | 'ANCHORS_ZERO_FEE_HTLC_OPT' | 'ROUTE_BLINDING_REQUIRED' | 'ROUTE_BLINDING_OPTIONAL' | 'AMP_REQ' | 'AMP_OPT' | 0 | 1 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 30 | 31;
-  export type FeatureBit__Output = 'DATALOSS_PROTECT_REQ' | 'DATALOSS_PROTECT_OPT' | 'INITIAL_ROUING_SYNC' | 'UPFRONT_SHUTDOWN_SCRIPT_REQ' | 'UPFRONT_SHUTDOWN_SCRIPT_OPT' | 'GOSSIP_QUERIES_REQ' | 'GOSSIP_QUERIES_OPT' | 'TLV_ONION_REQ' | 'TLV_ONION_OPT' | 'EXT_GOSSIP_QUERIES_REQ' | 'EXT_GOSSIP_QUERIES_OPT' | 'STATIC_REMOTE_KEY_REQ' | 'STATIC_REMOTE_KEY_OPT' | 'PAYMENT_ADDR_REQ' | 'PAYMENT_ADDR_OPT' | 'MPP_REQ' | 'MPP_OPT' | 'WUMBO_CHANNELS_REQ' | 'WUMBO_CHANNELS_OPT' | 'ANCHORS_REQ' | 'ANCHORS_OPT' | 'ANCHORS_ZERO_FEE_HTLC_REQ' | 'ANCHORS_ZERO_FEE_HTLC_OPT' | 'ROUTE_BLINDING_REQUIRED' | 'ROUTE_BLINDING_OPTIONAL' | 'AMP_REQ' | 'AMP_OPT';
+  /**
+   * A number is a value the protos of this line do not have (sent by a newer LND).
+   */
+  export type FeatureBit__Output = 'DATALOSS_PROTECT_REQ' | 'DATALOSS_PROTECT_OPT' | 'INITIAL_ROUING_SYNC' | 'UPFRONT_SHUTDOWN_SCRIPT_REQ' | 'UPFRONT_SHUTDOWN_SCRIPT_OPT' | 'GOSSIP_QUERIES_REQ' | 'GOSSIP_QUERIES_OPT' | 'TLV_ONION_REQ' | 'TLV_ONION_OPT' | 'EXT_GOSSIP_QUERIES_REQ' | 'EXT_GOSSIP_QUERIES_OPT' | 'STATIC_REMOTE_KEY_REQ' | 'STATIC_REMOTE_KEY_OPT' | 'PAYMENT_ADDR_REQ' | 'PAYMENT_ADDR_OPT' | 'MPP_REQ' | 'MPP_OPT' | 'WUMBO_CHANNELS_REQ' | 'WUMBO_CHANNELS_OPT' | 'ANCHORS_REQ' | 'ANCHORS_OPT' | 'ANCHORS_ZERO_FEE_HTLC_REQ' | 'ANCHORS_ZERO_FEE_HTLC_OPT' | 'ROUTE_BLINDING_REQUIRED' | 'ROUTE_BLINDING_OPTIONAL' | 'AMP_REQ' | 'AMP_OPT' | number;
   export interface FeeLimit {
     /**
      * The fee limit expressed as a fixed amount of satoshis.
@@ -5139,7 +5158,10 @@ export namespace lnrpc {
     'max_transactions': number;
   }
   export type GraphCacheStatus = 'GRAPH_CACHE_STATUS_DISABLED' | 'GRAPH_CACHE_STATUS_LOADING' | 'GRAPH_CACHE_STATUS_LOADED' | 'GRAPH_CACHE_STATUS_FAILED' | 0 | 1 | 2 | 3;
-  export type GraphCacheStatus__Output = 'GRAPH_CACHE_STATUS_DISABLED' | 'GRAPH_CACHE_STATUS_LOADING' | 'GRAPH_CACHE_STATUS_LOADED' | 'GRAPH_CACHE_STATUS_FAILED';
+  /**
+   * A number is a value the protos of this line do not have (sent by a newer LND).
+   */
+  export type GraphCacheStatus__Output = 'GRAPH_CACHE_STATUS_DISABLED' | 'GRAPH_CACHE_STATUS_LOADING' | 'GRAPH_CACHE_STATUS_LOADED' | 'GRAPH_CACHE_STATUS_FAILED' | number;
   export interface GraphTopologySubscription {
   }
   export interface GraphTopologySubscription__Output<L extends $LongOut = string> {
@@ -5278,7 +5300,10 @@ export namespace lnrpc {
   }
   export namespace HTLCAttempt {
     export type HTLCStatus = 'IN_FLIGHT' | 'SUCCEEDED' | 'FAILED' | 0 | 1 | 2;
-    export type HTLCStatus__Output = 'IN_FLIGHT' | 'SUCCEEDED' | 'FAILED';
+    /**
+     * A number is a value the protos of this line do not have (sent by a newer LND).
+     */
+    export type HTLCStatus__Output = 'IN_FLIGHT' | 'SUCCEEDED' | 'FAILED' | number;
   }
   export interface Hop {
     /**
@@ -5711,7 +5736,10 @@ export namespace lnrpc {
     'admin_macaroon': $BytesOut;
   }
   export type Initiator = 'INITIATOR_UNKNOWN' | 'INITIATOR_LOCAL' | 'INITIATOR_REMOTE' | 'INITIATOR_BOTH' | 0 | 1 | 2 | 3;
-  export type Initiator__Output = 'INITIATOR_UNKNOWN' | 'INITIATOR_LOCAL' | 'INITIATOR_REMOTE' | 'INITIATOR_BOTH';
+  /**
+   * A number is a value the protos of this line do not have (sent by a newer LND).
+   */
+  export type Initiator__Output = 'INITIATOR_UNKNOWN' | 'INITIATOR_LOCAL' | 'INITIATOR_REMOTE' | 'INITIATOR_BOTH' | number;
   export interface InstantUpdate {
     /**
      * The number of pending HTLCs that are currently active on the channel.
@@ -6140,7 +6168,10 @@ export namespace lnrpc {
   }
   export namespace Invoice {
     export type InvoiceState = 'OPEN' | 'SETTLED' | 'CANCELED' | 'ACCEPTED' | 0 | 1 | 2 | 3;
-    export type InvoiceState__Output = 'OPEN' | 'SETTLED' | 'CANCELED' | 'ACCEPTED';
+    /**
+     * A number is a value the protos of this line do not have (sent by a newer LND).
+     */
+    export type InvoiceState__Output = 'OPEN' | 'SETTLED' | 'CANCELED' | 'ACCEPTED' | number;
   }
   /**
    * Details of an HTLC that paid to an invoice
@@ -6253,7 +6284,10 @@ export namespace lnrpc {
     'custom_channel_data': $BytesOut;
   }
   export type InvoiceHTLCState = 'ACCEPTED' | 'SETTLED' | 'CANCELED' | 0 | 1 | 2;
-  export type InvoiceHTLCState__Output = 'ACCEPTED' | 'SETTLED' | 'CANCELED';
+  /**
+   * A number is a value the protos of this line do not have (sent by a newer LND).
+   */
+  export type InvoiceHTLCState__Output = 'ACCEPTED' | 'SETTLED' | 'CANCELED' | number;
   export interface InvoiceSubscription {
     /**
      * If specified (non-zero), then we'll first start by sending out
@@ -7131,7 +7165,10 @@ export namespace lnrpc {
     'include_auth_proof': boolean;
   }
   export type NodeMetricType = 'UNKNOWN' | 'BETWEENNESS_CENTRALITY' | 0 | 1;
-  export type NodeMetricType__Output = 'UNKNOWN' | 'BETWEENNESS_CENTRALITY';
+  /**
+   * A number is a value the protos of this line do not have (sent by a newer LND).
+   */
+  export type NodeMetricType__Output = 'UNKNOWN' | 'BETWEENNESS_CENTRALITY' | number;
   export interface NodeMetricsRequest {
     /**
      * The requested node metrics.
@@ -7773,7 +7810,10 @@ export namespace lnrpc {
     'is_our_address': boolean;
   }
   export type OutputScriptType = 'SCRIPT_TYPE_PUBKEY_HASH' | 'SCRIPT_TYPE_SCRIPT_HASH' | 'SCRIPT_TYPE_WITNESS_V0_PUBKEY_HASH' | 'SCRIPT_TYPE_WITNESS_V0_SCRIPT_HASH' | 'SCRIPT_TYPE_PUBKEY' | 'SCRIPT_TYPE_MULTISIG' | 'SCRIPT_TYPE_NULLDATA' | 'SCRIPT_TYPE_NON_STANDARD' | 'SCRIPT_TYPE_WITNESS_UNKNOWN' | 'SCRIPT_TYPE_WITNESS_V1_TAPROOT' | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
-  export type OutputScriptType__Output = 'SCRIPT_TYPE_PUBKEY_HASH' | 'SCRIPT_TYPE_SCRIPT_HASH' | 'SCRIPT_TYPE_WITNESS_V0_PUBKEY_HASH' | 'SCRIPT_TYPE_WITNESS_V0_SCRIPT_HASH' | 'SCRIPT_TYPE_PUBKEY' | 'SCRIPT_TYPE_MULTISIG' | 'SCRIPT_TYPE_NULLDATA' | 'SCRIPT_TYPE_NON_STANDARD' | 'SCRIPT_TYPE_WITNESS_UNKNOWN' | 'SCRIPT_TYPE_WITNESS_V1_TAPROOT';
+  /**
+   * A number is a value the protos of this line do not have (sent by a newer LND).
+   */
+  export type OutputScriptType__Output = 'SCRIPT_TYPE_PUBKEY_HASH' | 'SCRIPT_TYPE_SCRIPT_HASH' | 'SCRIPT_TYPE_WITNESS_V0_PUBKEY_HASH' | 'SCRIPT_TYPE_WITNESS_V0_SCRIPT_HASH' | 'SCRIPT_TYPE_PUBKEY' | 'SCRIPT_TYPE_MULTISIG' | 'SCRIPT_TYPE_NULLDATA' | 'SCRIPT_TYPE_NON_STANDARD' | 'SCRIPT_TYPE_WITNESS_UNKNOWN' | 'SCRIPT_TYPE_WITNESS_V1_TAPROOT' | number;
   export interface PayReq {
     'destination'?: string;
     'payment_hash'?: string;
@@ -7975,8 +8015,10 @@ export namespace lnrpc {
      * - `SUCCEEDED`: Payment is settled.
      * - `FAILED`: Payment is failed.
      * - `INITIATED`: Payment is created and has not attempted any HTLCs.
+     *
+     * A number is a value the protos of this line do not have (sent by a newer LND).
      */
-    export type PaymentStatus__Output = 'UNKNOWN' | 'IN_FLIGHT' | 'SUCCEEDED' | 'FAILED' | 'INITIATED';
+    export type PaymentStatus__Output = 'UNKNOWN' | 'IN_FLIGHT' | 'SUCCEEDED' | 'FAILED' | 'INITIATED' | number;
   }
   /**
    * - `FAILURE_REASON_NONE`: Payment isn't failed (yet).
@@ -7996,8 +8038,10 @@ export namespace lnrpc {
    * - `FAILURE_REASON_INCORRECT_PAYMENT_DETAILS`: Payment details incorrect (unknown hash, invalid amt or invalid final cltv delta)
    * - `FAILURE_REASON_INSUFFICIENT_BALANCE`: Insufficient local balance.
    * - `FAILURE_REASON_CANCELED`: The payment was canceled.
+   *
+   * A number is a value the protos of this line do not have (sent by a newer LND).
    */
-  export type PaymentFailureReason__Output = 'FAILURE_REASON_NONE' | 'FAILURE_REASON_TIMEOUT' | 'FAILURE_REASON_NO_ROUTE' | 'FAILURE_REASON_ERROR' | 'FAILURE_REASON_INCORRECT_PAYMENT_DETAILS' | 'FAILURE_REASON_INSUFFICIENT_BALANCE' | 'FAILURE_REASON_CANCELED';
+  export type PaymentFailureReason__Output = 'FAILURE_REASON_NONE' | 'FAILURE_REASON_TIMEOUT' | 'FAILURE_REASON_NO_ROUTE' | 'FAILURE_REASON_ERROR' | 'FAILURE_REASON_INCORRECT_PAYMENT_DETAILS' | 'FAILURE_REASON_INSUFFICIENT_BALANCE' | 'FAILURE_REASON_CANCELED' | number;
   export interface PaymentHash {
     /**
      * The hex-encoded payment hash of the invoice to be looked up. The passed
@@ -8177,8 +8221,10 @@ export namespace lnrpc {
      * - `ACTIVE_SYNC`: Denotes that we are actively receiving new graph updates from the peer.
      * - `PASSIVE_SYNC`: Denotes that we are not receiving new graph updates from the peer.
      * - `PINNED_SYNC`: Denotes that this peer is pinned into an active sync.
+     *
+     * A number is a value the protos of this line do not have (sent by a newer LND).
      */
-    export type SyncType__Output = 'UNKNOWN_SYNC' | 'ACTIVE_SYNC' | 'PASSIVE_SYNC' | 'PINNED_SYNC';
+    export type SyncType__Output = 'UNKNOWN_SYNC' | 'ACTIVE_SYNC' | 'PASSIVE_SYNC' | 'PINNED_SYNC' | number;
   }
   export interface PeerEvent {
     /**
@@ -8196,7 +8242,10 @@ export namespace lnrpc {
   }
   export namespace PeerEvent {
     export type EventType = 'PEER_ONLINE' | 'PEER_OFFLINE' | 0 | 1;
-    export type EventType__Output = 'PEER_ONLINE' | 'PEER_OFFLINE';
+    /**
+     * A number is a value the protos of this line do not have (sent by a newer LND).
+     */
+    export type EventType__Output = 'PEER_ONLINE' | 'PEER_OFFLINE' | number;
   }
   export interface PeerEventSubscription {
   }
@@ -8424,8 +8473,10 @@ export namespace lnrpc {
        * - `LIMBO`: The recovered_balance is zero and limbo_balance is non-zero.
        * - `RECOVERED`: The recovered_balance is non-zero.
        * - `LOST`: A state that is neither LIMBO nor RECOVERED.
+       *
+       * A number is a value the protos of this line do not have (sent by a newer LND).
        */
-      export type AnchorState__Output = 'LIMBO' | 'RECOVERED' | 'LOST';
+      export type AnchorState__Output = 'LIMBO' | 'RECOVERED' | 'LOST' | number;
     }
     export interface PendingChannel {
       'remote_node_pub'?: string;
@@ -9578,8 +9629,10 @@ export namespace lnrpc {
    * - `ABANDONED`: ResolverOutcomeAbandoned indicates that an output that we did not claim on chain, for example an anchor that we did not sweep and a third party claimed on chain, or a htlc that we could not decode so left unclaimed.
    * - `FIRST_STAGE`: If we force closed our channel, our htlcs need to be claimed in two stages. This outcome represents the broadcast of a timeout or success transaction for this two stage htlc claim.
    * - `TIMEOUT`: A htlc was timed out on chain.
+   *
+   * A number is a value the protos of this line do not have (sent by a newer LND).
    */
-  export type ResolutionOutcome__Output = 'OUTCOME_UNKNOWN' | 'CLAIMED' | 'UNCLAIMED' | 'ABANDONED' | 'FIRST_STAGE' | 'TIMEOUT';
+  export type ResolutionOutcome__Output = 'OUTCOME_UNKNOWN' | 'CLAIMED' | 'UNCLAIMED' | 'ABANDONED' | 'FIRST_STAGE' | 'TIMEOUT' | number;
   /**
    * - `ANCHOR`: We resolved an anchor output.
    * - `INCOMING_HTLC`: We are resolving an incoming htlc on chain. This if this htlc is claimed, we swept the incoming htlc with the preimage. If it is timed out, our peer swept the timeout path.
@@ -9592,8 +9645,10 @@ export namespace lnrpc {
    * - `INCOMING_HTLC`: We are resolving an incoming htlc on chain. This if this htlc is claimed, we swept the incoming htlc with the preimage. If it is timed out, our peer swept the timeout path.
    * - `OUTGOING_HTLC`: We are resolving an outgoing htlc on chain. If this htlc is claimed, the remote party swept the htlc with the preimage. If it is timed out, we swept it with the timeout path.
    * - `COMMIT`: We force closed and need to sweep our time locked commitment output.
+   *
+   * A number is a value the protos of this line do not have (sent by a newer LND).
    */
-  export type ResolutionType__Output = 'TYPE_UNKNOWN' | 'ANCHOR' | 'INCOMING_HTLC' | 'OUTGOING_HTLC' | 'COMMIT';
+  export type ResolutionType__Output = 'TYPE_UNKNOWN' | 'ANCHOR' | 'INCOMING_HTLC' | 'OUTGOING_HTLC' | 'COMMIT' | number;
   export interface RestoreBackupResponse {
     /**
      * The number of channels successfully restored.
@@ -10419,7 +10474,10 @@ export namespace lnrpc {
   export interface UnlockWalletResponse__Output<L extends $LongOut = string> {
   }
   export type UpdateFailure = 'UPDATE_FAILURE_UNKNOWN' | 'UPDATE_FAILURE_PENDING' | 'UPDATE_FAILURE_NOT_FOUND' | 'UPDATE_FAILURE_INTERNAL_ERR' | 'UPDATE_FAILURE_INVALID_PARAMETER' | 0 | 1 | 2 | 3 | 4;
-  export type UpdateFailure__Output = 'UPDATE_FAILURE_UNKNOWN' | 'UPDATE_FAILURE_PENDING' | 'UPDATE_FAILURE_NOT_FOUND' | 'UPDATE_FAILURE_INTERNAL_ERR' | 'UPDATE_FAILURE_INVALID_PARAMETER';
+  /**
+   * A number is a value the protos of this line do not have (sent by a newer LND).
+   */
+  export type UpdateFailure__Output = 'UPDATE_FAILURE_UNKNOWN' | 'UPDATE_FAILURE_PENDING' | 'UPDATE_FAILURE_NOT_FOUND' | 'UPDATE_FAILURE_INTERNAL_ERR' | 'UPDATE_FAILURE_INVALID_PARAMETER' | number;
   export interface Utxo {
     /**
      * The type of address
@@ -10636,8 +10694,10 @@ export namespace lnrpc {
    * - `RPC_ACTIVE`: RPC_ACTIVE means that the lnd server is active but not fully ready for calls.
    * - `SERVER_ACTIVE`: SERVER_ACTIVE means that the lnd server is ready to accept calls.
    * - `WAITING_TO_START`: WAITING_TO_START means that node is waiting to become the leader in a cluster and is not started yet.
+   *
+   * A number is a value the protos of this line do not have (sent by a newer LND).
    */
-  export type WalletState__Output = 'NON_EXISTING' | 'LOCKED' | 'UNLOCKED' | 'RPC_ACTIVE' | 'SERVER_ACTIVE' | 'WAITING_TO_START';
+  export type WalletState__Output = 'NON_EXISTING' | 'LOCKED' | 'UNLOCKED' | 'RPC_ACTIVE' | 'SERVER_ACTIVE' | 'WAITING_TO_START' | number;
   export interface WatchOnly {
     /**
      * The unix timestamp in seconds of when the master key was created. lnd will
@@ -11184,8 +11244,10 @@ export namespace peersrpc {
    * - `SET_NODE_ANN`: SET_NODE_ANN identifies features that should be advertised on node announcements.
    * - `SET_INVOICE`: SET_INVOICE identifies features that should be advertised on invoices generated by the daemon.
    * - `SET_INVOICE_AMP`: SET_INVOICE_AMP identifies the features that should be advertised on AMP invoices generated by the daemon.
+   *
+   * A number is a value the protos of this line do not have (sent by a newer LND).
    */
-  export type FeatureSet__Output = 'SET_INIT' | 'SET_LEGACY_GLOBAL' | 'SET_NODE_ANN' | 'SET_INVOICE' | 'SET_INVOICE_AMP';
+  export type FeatureSet__Output = 'SET_INIT' | 'SET_LEGACY_GLOBAL' | 'SET_NODE_ANN' | 'SET_INVOICE' | 'SET_INVOICE_AMP' | number;
   export interface NodeAnnouncementUpdateRequest {
     /**
      * Set of changes for the features that the node supports.
@@ -11240,8 +11302,10 @@ export namespace peersrpc {
    *
    * - `ADD`: ADD indicates this is an "insertion" kind of action.
    * - `REMOVE`: REMOVE indicates this is a "deletion" kind of action.
+   *
+   * A number is a value the protos of this line do not have (sent by a newer LND).
    */
-  export type UpdateAction__Output = 'ADD' | 'REMOVE';
+  export type UpdateAction__Output = 'ADD' | 'REMOVE' | number;
   export interface UpdateAddressAction {
     /**
      * Determines the kind of action.
@@ -11498,7 +11562,10 @@ export namespace routerrpc {
     'route': lnrpc.Route__Output<L> | null;
   }
   export type ChanStatusAction = 'ENABLE' | 'DISABLE' | 'AUTO' | 0 | 1 | 2;
-  export type ChanStatusAction__Output = 'ENABLE' | 'DISABLE' | 'AUTO';
+  /**
+   * A number is a value the protos of this line do not have (sent by a newer LND).
+   */
+  export type ChanStatusAction__Output = 'ENABLE' | 'DISABLE' | 'AUTO' | number;
   export interface CircuitKey {
     /**
      * The id of the channel that the is part of this circuit.
@@ -11600,7 +11667,10 @@ export namespace routerrpc {
     'status': string;
   }
   export type FailureDetail = 'UNKNOWN' | 'NO_DETAIL' | 'ONION_DECODE' | 'LINK_NOT_ELIGIBLE' | 'ON_CHAIN_TIMEOUT' | 'HTLC_EXCEEDS_MAX' | 'INSUFFICIENT_BALANCE' | 'INCOMPLETE_FORWARD' | 'HTLC_ADD_FAILED' | 'FORWARDS_DISABLED' | 'INVOICE_CANCELED' | 'INVOICE_UNDERPAID' | 'INVOICE_EXPIRY_TOO_SOON' | 'INVOICE_NOT_OPEN' | 'MPP_INVOICE_TIMEOUT' | 'ADDRESS_MISMATCH' | 'SET_TOTAL_MISMATCH' | 'SET_TOTAL_TOO_LOW' | 'SET_OVERPAID' | 'UNKNOWN_INVOICE' | 'INVALID_KEYSEND' | 'MPP_IN_PROGRESS' | 'CIRCULAR_ROUTE' | 'INVOICE_ALREADY_SETTLED' | 'HTLC_INVOICE_TYPE_MISMATCH' | 'AMP_ERROR' | 'AMP_RECONSTRUCTION' | 'EXTERNAL_VALIDATION_FAILED' | 'INVOICE_INTERCEPTOR_ERROR' | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22 | 23 | 24 | 25 | 26 | 27 | 28;
-  export type FailureDetail__Output = 'UNKNOWN' | 'NO_DETAIL' | 'ONION_DECODE' | 'LINK_NOT_ELIGIBLE' | 'ON_CHAIN_TIMEOUT' | 'HTLC_EXCEEDS_MAX' | 'INSUFFICIENT_BALANCE' | 'INCOMPLETE_FORWARD' | 'HTLC_ADD_FAILED' | 'FORWARDS_DISABLED' | 'INVOICE_CANCELED' | 'INVOICE_UNDERPAID' | 'INVOICE_EXPIRY_TOO_SOON' | 'INVOICE_NOT_OPEN' | 'MPP_INVOICE_TIMEOUT' | 'ADDRESS_MISMATCH' | 'SET_TOTAL_MISMATCH' | 'SET_TOTAL_TOO_LOW' | 'SET_OVERPAID' | 'UNKNOWN_INVOICE' | 'INVALID_KEYSEND' | 'MPP_IN_PROGRESS' | 'CIRCULAR_ROUTE' | 'INVOICE_ALREADY_SETTLED' | 'HTLC_INVOICE_TYPE_MISMATCH' | 'AMP_ERROR' | 'AMP_RECONSTRUCTION' | 'EXTERNAL_VALIDATION_FAILED' | 'INVOICE_INTERCEPTOR_ERROR';
+  /**
+   * A number is a value the protos of this line do not have (sent by a newer LND).
+   */
+  export type FailureDetail__Output = 'UNKNOWN' | 'NO_DETAIL' | 'ONION_DECODE' | 'LINK_NOT_ELIGIBLE' | 'ON_CHAIN_TIMEOUT' | 'HTLC_EXCEEDS_MAX' | 'INSUFFICIENT_BALANCE' | 'INCOMPLETE_FORWARD' | 'HTLC_ADD_FAILED' | 'FORWARDS_DISABLED' | 'INVOICE_CANCELED' | 'INVOICE_UNDERPAID' | 'INVOICE_EXPIRY_TOO_SOON' | 'INVOICE_NOT_OPEN' | 'MPP_INVOICE_TIMEOUT' | 'ADDRESS_MISMATCH' | 'SET_TOTAL_MISMATCH' | 'SET_TOTAL_TOO_LOW' | 'SET_OVERPAID' | 'UNKNOWN_INVOICE' | 'INVALID_KEYSEND' | 'MPP_IN_PROGRESS' | 'CIRCULAR_ROUTE' | 'INVOICE_ALREADY_SETTLED' | 'HTLC_INVOICE_TYPE_MISMATCH' | 'AMP_ERROR' | 'AMP_RECONSTRUCTION' | 'EXTERNAL_VALIDATION_FAILED' | 'INVOICE_INTERCEPTOR_ERROR' | number;
   export interface FinalHtlcEvent {
     'settled'?: boolean;
     'offchain'?: boolean;
@@ -12077,7 +12147,10 @@ export namespace routerrpc {
   }
   export namespace HtlcEvent {
     export type EventType = 'UNKNOWN' | 'SEND' | 'RECEIVE' | 'FORWARD' | 0 | 1 | 2 | 3;
-    export type EventType__Output = 'UNKNOWN' | 'SEND' | 'RECEIVE' | 'FORWARD';
+    /**
+     * A number is a value the protos of this line do not have (sent by a newer LND).
+     */
+    export type EventType__Output = 'UNKNOWN' | 'SEND' | 'RECEIVE' | 'FORWARD' | number;
   }
   export interface HtlcInfo {
     /**
@@ -12251,7 +12324,10 @@ export namespace routerrpc {
   }
   export namespace MissionControlConfig {
     export type ProbabilityModel = 'APRIORI' | 'BIMODAL' | 0 | 1;
-    export type ProbabilityModel__Output = 'APRIORI' | 'BIMODAL';
+    /**
+     * A number is a value the protos of this line do not have (sent by a newer LND).
+     */
+    export type ProbabilityModel__Output = 'APRIORI' | 'BIMODAL' | number;
   }
   export interface PairData {
     /**
@@ -12427,8 +12503,10 @@ export namespace routerrpc {
    * - `FAIL`: FAIL is an action that is used to fail an HTLC backwards.
    * - `RESUME`: RESUME is an action that is used to resume a forward HTLC.
    * - `RESUME_MODIFIED`: RESUME_MODIFIED is an action that is used to resume a hold forward HTLC with modifications specified during interception.
+   *
+   * A number is a value the protos of this line do not have (sent by a newer LND).
    */
-  export type ResolveHoldForwardAction__Output = 'SETTLE' | 'FAIL' | 'RESUME' | 'RESUME_MODIFIED';
+  export type ResolveHoldForwardAction__Output = 'SETTLE' | 'FAIL' | 'RESUME' | 'RESUME_MODIFIED' | number;
   export interface RouteFeeRequest {
     /**
      * The destination one wishes to obtain a routing fee quote to. If set, this
@@ -13544,8 +13622,10 @@ export namespace signrpc {
    * - `MUSIG2_VERSION_UNDEFINED`: The default value on the RPC is zero for enums so we need to represent an invalid/undefined version by default to make sure clients upgrade their software to set the version explicitly.
    * - `MUSIG2_VERSION_V040`: The version of MuSig2 that lnd 0.15.x shipped with, which corresponds to the version v0.4.0 of the MuSig2 BIP draft.
    * - `MUSIG2_VERSION_V100RC2`: The current version of MuSig2 which corresponds to the version v1.0.0rc2 of the MuSig2 BIP draft.
+   *
+   * A number is a value the protos of this line do not have (sent by a newer LND).
    */
-  export type MuSig2Version__Output = 'MUSIG2_VERSION_UNDEFINED' | 'MUSIG2_VERSION_V040' | 'MUSIG2_VERSION_V100RC2';
+  export type MuSig2Version__Output = 'MUSIG2_VERSION_UNDEFINED' | 'MUSIG2_VERSION_V040' | 'MUSIG2_VERSION_V100RC2' | number;
   export interface SharedKeyRequest {
     /**
      * The ephemeral public key to use for the DH key derivation.
@@ -13832,8 +13912,10 @@ export namespace signrpc {
    * - `SIGN_METHOD_TAPROOT_KEY_SPEND_BIP0086`: Specifies that a SegWit v1 (p2tr) input should be signed by using the BIP0086 method (commit to internal key only).
    * - `SIGN_METHOD_TAPROOT_KEY_SPEND`: Specifies that a SegWit v1 (p2tr) input should be signed by using a given taproot hash to commit to in addition to the internal key.
    * - `SIGN_METHOD_TAPROOT_SCRIPT_SPEND`: Specifies that a SegWit v1 (p2tr) input should be spent using the script path and that a specific leaf script should be signed for.
+   *
+   * A number is a value the protos of this line do not have (sent by a newer LND).
    */
-  export type SignMethod__Output = 'SIGN_METHOD_WITNESS_V0' | 'SIGN_METHOD_TAPROOT_KEY_SPEND_BIP0086' | 'SIGN_METHOD_TAPROOT_KEY_SPEND' | 'SIGN_METHOD_TAPROOT_SCRIPT_SPEND';
+  export type SignMethod__Output = 'SIGN_METHOD_WITNESS_V0' | 'SIGN_METHOD_TAPROOT_KEY_SPEND_BIP0086' | 'SIGN_METHOD_TAPROOT_KEY_SPEND' | 'SIGN_METHOD_TAPROOT_SCRIPT_SPEND' | number;
   export interface SignReq {
     /**
      * The raw bytes of the transaction to be signed.
@@ -14349,7 +14431,10 @@ export namespace walletrpc {
     'public_key': $BytesOut;
   }
   export type AddressType = 'UNKNOWN' | 'WITNESS_PUBKEY_HASH' | 'NESTED_WITNESS_PUBKEY_HASH' | 'HYBRID_NESTED_WITNESS_PUBKEY_HASH' | 'TAPROOT_PUBKEY' | 0 | 1 | 2 | 3 | 4;
-  export type AddressType__Output = 'UNKNOWN' | 'WITNESS_PUBKEY_HASH' | 'NESTED_WITNESS_PUBKEY_HASH' | 'HYBRID_NESTED_WITNESS_PUBKEY_HASH' | 'TAPROOT_PUBKEY';
+  /**
+   * A number is a value the protos of this line do not have (sent by a newer LND).
+   */
+  export type AddressType__Output = 'UNKNOWN' | 'WITNESS_PUBKEY_HASH' | 'NESTED_WITNESS_PUBKEY_HASH' | 'HYBRID_NESTED_WITNESS_PUBKEY_HASH' | 'TAPROOT_PUBKEY' | number;
   export interface BumpFeeRequest {
     /**
      * The input we're attempting to bump the fee of.
@@ -14582,8 +14667,10 @@ export namespace walletrpc {
    *
    * - `CHANGE_ADDRESS_TYPE_UNSPECIFIED`: CHANGE_ADDRESS_TYPE_UNSPECIFIED indicates that no change address type is provided. We will then use P2WPKH address type for change (BIP0084 key scope).
    * - `CHANGE_ADDRESS_TYPE_P2TR`: CHANGE_ADDRESS_TYPE_P2TR indicates to use P2TR address for change output (BIP0086 key scope).
+   *
+   * A number is a value the protos of this line do not have (sent by a newer LND).
    */
-  export type ChangeAddressType__Output = 'CHANGE_ADDRESS_TYPE_UNSPECIFIED' | 'CHANGE_ADDRESS_TYPE_P2TR';
+  export type ChangeAddressType__Output = 'CHANGE_ADDRESS_TYPE_UNSPECIFIED' | 'CHANGE_ADDRESS_TYPE_P2TR' | number;
   export interface EstimateFeeRequest {
     /**
      * The number of confirmations to shoot for when estimating the fee.
@@ -16342,8 +16429,10 @@ export namespace walletrpc {
    * - `TAPROOT_HTLC_OFFERED_REMOTE_TIMEOUT_FINAL`: A witness that allows us to sweep an HTLC we offered to the remote party that lies on the production taproot commitment transaction for the remote party. We can spend this output after the absolute CLTV timeout of the HTLC as passed.
    * - `TAPROOT_HTLC_ACCEPTED_REMOTE_SUCCESS_FINAL`: A witness that allows us to sweep an HTLC that was offered to us by the remote party for a production taproot channel. We use this witness in the case that the remote party goes to chain, and we know the pre-image to the HTLC. We can sweep this without any additional timeout.
    * - `TAPROOT_COMMITMENT_REVOKE_FINAL`: A witness type that allows us to sweep the settled output of a malicious counterparty's who broadcasts a revoked production taproot commitment transaction.
+   *
+   * A number is a value the protos of this line do not have (sent by a newer LND).
    */
-  export type WitnessType__Output = 'UNKNOWN_WITNESS' | 'COMMITMENT_TIME_LOCK' | 'COMMITMENT_NO_DELAY' | 'COMMITMENT_REVOKE' | 'HTLC_OFFERED_REVOKE' | 'HTLC_ACCEPTED_REVOKE' | 'HTLC_OFFERED_TIMEOUT_SECOND_LEVEL' | 'HTLC_ACCEPTED_SUCCESS_SECOND_LEVEL' | 'HTLC_OFFERED_REMOTE_TIMEOUT' | 'HTLC_ACCEPTED_REMOTE_SUCCESS' | 'HTLC_SECOND_LEVEL_REVOKE' | 'WITNESS_KEY_HASH' | 'NESTED_WITNESS_KEY_HASH' | 'COMMITMENT_ANCHOR' | 'COMMITMENT_NO_DELAY_TWEAKLESS' | 'COMMITMENT_TO_REMOTE_CONFIRMED' | 'HTLC_OFFERED_TIMEOUT_SECOND_LEVEL_INPUT_CONFIRMED' | 'HTLC_ACCEPTED_SUCCESS_SECOND_LEVEL_INPUT_CONFIRMED' | 'LEASE_COMMITMENT_TIME_LOCK' | 'LEASE_COMMITMENT_TO_REMOTE_CONFIRMED' | 'LEASE_HTLC_OFFERED_TIMEOUT_SECOND_LEVEL' | 'LEASE_HTLC_ACCEPTED_SUCCESS_SECOND_LEVEL' | 'TAPROOT_PUB_KEY_SPEND' | 'TAPROOT_LOCAL_COMMIT_SPEND' | 'TAPROOT_REMOTE_COMMIT_SPEND' | 'TAPROOT_ANCHOR_SWEEP_SPEND' | 'TAPROOT_HTLC_OFFERED_TIMEOUT_SECOND_LEVEL' | 'TAPROOT_HTLC_ACCEPTED_SUCCESS_SECOND_LEVEL' | 'TAPROOT_HTLC_SECOND_LEVEL_REVOKE' | 'TAPROOT_HTLC_ACCEPTED_REVOKE' | 'TAPROOT_HTLC_OFFERED_REVOKE' | 'TAPROOT_HTLC_OFFERED_REMOTE_TIMEOUT' | 'TAPROOT_HTLC_LOCAL_OFFERED_TIMEOUT' | 'TAPROOT_HTLC_ACCEPTED_REMOTE_SUCCESS' | 'TAPROOT_HTLC_ACCEPTED_LOCAL_SUCCESS' | 'TAPROOT_COMMITMENT_REVOKE' | 'TAPROOT_LOCAL_COMMIT_SPEND_FINAL' | 'TAPROOT_REMOTE_COMMIT_SPEND_FINAL' | 'TAPROOT_HTLC_OFFERED_TIMEOUT_SECOND_LEVEL_FINAL' | 'TAPROOT_HTLC_ACCEPTED_SUCCESS_SECOND_LEVEL_FINAL' | 'TAPROOT_HTLC_OFFERED_REMOTE_TIMEOUT_FINAL' | 'TAPROOT_HTLC_ACCEPTED_REMOTE_SUCCESS_FINAL' | 'TAPROOT_COMMITMENT_REVOKE_FINAL';
+  export type WitnessType__Output = 'UNKNOWN_WITNESS' | 'COMMITMENT_TIME_LOCK' | 'COMMITMENT_NO_DELAY' | 'COMMITMENT_REVOKE' | 'HTLC_OFFERED_REVOKE' | 'HTLC_ACCEPTED_REVOKE' | 'HTLC_OFFERED_TIMEOUT_SECOND_LEVEL' | 'HTLC_ACCEPTED_SUCCESS_SECOND_LEVEL' | 'HTLC_OFFERED_REMOTE_TIMEOUT' | 'HTLC_ACCEPTED_REMOTE_SUCCESS' | 'HTLC_SECOND_LEVEL_REVOKE' | 'WITNESS_KEY_HASH' | 'NESTED_WITNESS_KEY_HASH' | 'COMMITMENT_ANCHOR' | 'COMMITMENT_NO_DELAY_TWEAKLESS' | 'COMMITMENT_TO_REMOTE_CONFIRMED' | 'HTLC_OFFERED_TIMEOUT_SECOND_LEVEL_INPUT_CONFIRMED' | 'HTLC_ACCEPTED_SUCCESS_SECOND_LEVEL_INPUT_CONFIRMED' | 'LEASE_COMMITMENT_TIME_LOCK' | 'LEASE_COMMITMENT_TO_REMOTE_CONFIRMED' | 'LEASE_HTLC_OFFERED_TIMEOUT_SECOND_LEVEL' | 'LEASE_HTLC_ACCEPTED_SUCCESS_SECOND_LEVEL' | 'TAPROOT_PUB_KEY_SPEND' | 'TAPROOT_LOCAL_COMMIT_SPEND' | 'TAPROOT_REMOTE_COMMIT_SPEND' | 'TAPROOT_ANCHOR_SWEEP_SPEND' | 'TAPROOT_HTLC_OFFERED_TIMEOUT_SECOND_LEVEL' | 'TAPROOT_HTLC_ACCEPTED_SUCCESS_SECOND_LEVEL' | 'TAPROOT_HTLC_SECOND_LEVEL_REVOKE' | 'TAPROOT_HTLC_ACCEPTED_REVOKE' | 'TAPROOT_HTLC_OFFERED_REVOKE' | 'TAPROOT_HTLC_OFFERED_REMOTE_TIMEOUT' | 'TAPROOT_HTLC_LOCAL_OFFERED_TIMEOUT' | 'TAPROOT_HTLC_ACCEPTED_REMOTE_SUCCESS' | 'TAPROOT_HTLC_ACCEPTED_LOCAL_SUCCESS' | 'TAPROOT_COMMITMENT_REVOKE' | 'TAPROOT_LOCAL_COMMIT_SPEND_FINAL' | 'TAPROOT_REMOTE_COMMIT_SPEND_FINAL' | 'TAPROOT_HTLC_OFFERED_TIMEOUT_SECOND_LEVEL_FINAL' | 'TAPROOT_HTLC_ACCEPTED_SUCCESS_SECOND_LEVEL_FINAL' | 'TAPROOT_HTLC_OFFERED_REMOTE_TIMEOUT_FINAL' | 'TAPROOT_HTLC_ACCEPTED_REMOTE_SUCCESS_FINAL' | 'TAPROOT_COMMITMENT_REVOKE_FINAL' | number;
   export interface XCreateAccountRequest {
     /**
      * The name to identify the new account with. The name must not be empty and
@@ -16626,8 +16715,10 @@ export namespace wtclientrpc {
    * - `LEGACY`: Selects the policy from the legacy tower client.
    * - `ANCHOR`: Selects the policy from the anchor tower client.
    * - `TAPROOT`: Selects the policy from the taproot tower client.
+   *
+   * A number is a value the protos of this line do not have (sent by a newer LND).
    */
-  export type PolicyType__Output = 'LEGACY' | 'ANCHOR' | 'TAPROOT';
+  export type PolicyType__Output = 'LEGACY' | 'ANCHOR' | 'TAPROOT' | number;
   export interface RemoveTowerRequest {
     /**
      * The identifying public key of the watchtower to remove.
