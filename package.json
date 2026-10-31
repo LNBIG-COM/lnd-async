@@ -25,12 +25,12 @@
     "lib": "lib"
   },
   "bugs": {
-    "url": "https://github.com/altangent/lnd-async/issues"
+    "url": "https://github.com/LNBIG-COM/lnd-async/issues"
   },
-  "homepage": "https://github.com/altangent/lnd-async#readme",
+  "homepage": "https://github.com/LNBIG-COM/lnd-async#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/altangent/lnd-async.git"
+    "url": "git+https://github.com/LNBIG-COM/lnd-async.git"
   },
   "scripts": {
     "test": "mocha \"test/**/*.spec.js\" -r dotenv/config && npm run test:types",
