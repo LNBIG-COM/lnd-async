@@ -1,6 +1,6 @@
 // Compile-only checks of the declarations for the default LND line (`tsc -p test/types`).
 // Lines marked @ts-expect-error must fail to compile; the rest must compile.
-import { connect, defaultLndVersion, supportedLndVersions, ValidationError } from '../../lib/lnd-async';
+import { connect, defaultLndVersion, supportedLndVersions, validate, ValidationError } from '../../lib/lnd-async';
 import type { ConnectOptions, LndClient, lnrpc, Lnd0_20, routerrpc } from '../../lib/lnd-async';
 
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
@@ -114,6 +114,11 @@ async function connectOptions() {
   await connect({ lndHost: 'node', lndPort: 10009, cert: 'base64', macaroon: 'base64' });
   await connect({ lndPort: '10009', certPath: '/tls.cert', macaroonPath: '/admin.macaroon' });
   await connect({ noCert: true, noMacaroons: true, strict: true });
+  await connect({ strict: 'warn' });
+  await connect({ strict: (error: ValidationError) => console.log(error.method, error.path) });
+  await connect({ strict: error => void error.messageType });
+  // @ts-expect-error not a mode of strict
+  await connect({ strict: 'log' });
   // @ts-expect-error unknown option
   await connect({ lndHost: 'node', lndPortt: 10009 });
   // @ts-expect-error wrong type of an option
@@ -135,10 +140,15 @@ async function connectOptions() {
 
 function runtimeExports(error: unknown) {
   expectType<Equal<typeof defaultLndVersion, '0.20'>>();
+  expectType<Equal<ReturnType<typeof validate>, void>>();
+  validate('0.21', 'Lightning.addInvoice', { value: 1000 });
+  validate(undefined, 'addInvoice', JSON.parse('{}'));
+  // @ts-expect-error the method is required
+  validate('0.21', { value: 1000 });
   const lines: readonly string[] = supportedLndVersions;
   void lines;
   if (error instanceof ValidationError) {
-    const where: string = error.path + error.messageType + error.message;
+    const where: string = error.path + error.messageType + error.message + error.method;
     void where;
   }
 }

@@ -49,11 +49,14 @@ export interface ConnectOptions {
    */
   lndVersion?: LndVersion;
   /**
-   * Validate every request before it is sent and throw {@link ValidationError} on an unknown
-   * field, a value of the wrong type or an unknown enum value. Without it, unknown fields are
-   * silently dropped and values are coerced, as protobufjs does.
+   * Validate every request before it is sent: an unknown field, a value of the wrong type or an
+   * unknown enum value is a {@link ValidationError}. Without it, unknown fields are silently
+   * dropped and values are coerced, as protobufjs does.
+   * - `true`: the request is not sent; a unary call rejects, a streaming call throws.
+   * - `'warn'`: the request is sent anyway and the error is emitted as a process warning.
+   * - a function: it gets the error, then the request is sent, unless the function throws.
    */
-  strict?: boolean;
+  strict?: boolean | 'warn' | ((error: ValidationError) => void);
 }
 
 /** A raw @grpc/grpc-js client with callback-style methods. */
@@ -109,10 +112,25 @@ export const defaultLndVersion: DefaultLndVersion;
  */
 export function resolveLndVersion(lndVersion?: string | null): LndVersion;
 
+/**
+ * Checks a request as strict mode does, without sending it, and throws {@link ValidationError}
+ * when it is not valid. `lndVersion` is taken as by connect(). `method` is `'Service.method'` as
+ * on the client (`'Lightning.addInvoice'`; the rpc name `'Lightning.AddInvoice'` works too) or a
+ * method of the client itself (`'addInvoice'`); an unknown method throws an `Error`. For a
+ * bidirectional stream, `request` is a message written to it.
+ */
+export function validate(
+  lndVersion: string | null | undefined,
+  method: string,
+  request: unknown
+): void;
+
 /** Thrown in strict mode when a request does not match its protobuf message. */
 export class ValidationError extends TypeError {
   /** Full name of the message type of the request, e.g. `lnrpc.Invoice`. */
   readonly messageType: string;
   /** Where in the request the problem is, e.g. `route_hints[0].hop_hints[1].chan_id`. */
   readonly path: string;
+  /** The method whose request it is, e.g. `Router.sendPaymentV2`. */
+  readonly method: string;
 }

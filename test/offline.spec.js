@@ -1,5 +1,6 @@
 // Tests that run without a real LND node: a local gRPC server plays LND.
 const { expect } = require('chai');
+const sinon = require('sinon');
 const sut = require('../lib/lnd-async');
 const { createCertificate, startMockLnd } = require('./helpers/mock-lnd');
 const { getLine } = require('../lib/common');
@@ -205,6 +206,7 @@ describe('lnd-async against a mock LND', function() {
         expect(err).to.be.instanceOf(TypeError);
         expect(err.messageType).to.equal('lnrpc.Invoice');
         expect(err.path).to.equal('valeu');
+        expect(err.method).to.equal('Lightning.addInvoice');
         expect(err.message).to.equal('lnrpc.Invoice.valeu: unknown field (did you mean "value"?)');
         expect(mock.calls.length).to.equal(before);
       });
@@ -262,6 +264,83 @@ describe('lnd-async against a mock LND', function() {
           'routerrpc.ForwardHtlcInterceptResponse.action: expected a value of'
         );
         interceptor.cancel();
+      });
+
+      it('sends an invalid request when a function gets the error', async () => {
+        let errors = [];
+        let client = await connect(mock, { strict: error => errors.push(error) });
+        let response = await client.addInvoice({ valeu: 1000, memo: 'reported' });
+        expect(response.add_index).to.equal('7');
+        expect(
+          mock.calls.filter(c => c.method === 'Lightning.AddInvoice').pop().request.memo
+        ).to.equal('reported');
+        await client.Lightning.addInvoice({ value: 1000 });
+        expect(errors).to.have.length(1);
+        expect(errors[0]).to.be.instanceOf(sut.ValidationError);
+        expect(errors[0].method).to.equal('Lightning.addInvoice');
+        expect(errors[0].path).to.equal('valeu');
+
+        let interceptor = client.Router.htlcInterceptor();
+        let received = new Promise(resolve => interceptor.once('data', resolve));
+        interceptor.write({
+          incoming_circuit_key: { chan_id: '3', htlc_id: '3' },
+          action: 'ACCEPT',
+        });
+        await received;
+        interceptor.end();
+        expect(interceptorRequests.pop().action).to.equal('SETTLE'); // as without strict
+        expect(errors[1].method).to.equal('Router.htlcInterceptor');
+        expect(errors[1].path).to.equal('action');
+      });
+
+      it('does not send a request when the function throws', async () => {
+        let client = await connect(mock, {
+          strict: error => {
+            throw error;
+          },
+        });
+        let before = mock.calls.length;
+        let err = await client.addInvoice({ valeu: 1000 }).then(
+          () => null,
+          e => e
+        );
+        expect(err).to.be.instanceOf(sut.ValidationError);
+        expect(() => client.subscribeInvoices({ add_index: -1 })).to.throw(sut.ValidationError);
+        expect(mock.calls.length).to.equal(before);
+      });
+
+      it("emits a process warning and sends the request with strict: 'warn'", async () => {
+        let warnings = [];
+        // Other warnings (DEP0123 of the first TLS connection to an IP address) pass through
+        let emitWarning = sinon
+          .stub(process, 'emitWarning')
+          .callsFake((warning, ...rest) =>
+            warning instanceof sut.ValidationError
+              ? warnings.push(warning)
+              : emitWarning.wrappedMethod.call(process, warning, ...rest)
+          );
+        try {
+          let client = await connect(mock, { strict: 'warn' });
+          await client.addInvoice({ valeu: 1000, memo: 'warned' });
+          await new Promise((resolve, reject) =>
+            client
+              .subscribeInvoices({ add_index: -1 })
+              .on('data', () => {})
+              .on('error', reject)
+              .on('end', resolve)
+          );
+        } finally {
+          emitWarning.restore();
+        }
+        expect(
+          mock.calls.filter(c => c.method === 'Lightning.AddInvoice').pop().request.memo
+        ).to.equal('warned');
+        expect(mock.calls.pop().method).to.equal('Lightning.SubscribeInvoices');
+        expect(warnings.map(w => w instanceof sut.ValidationError)).to.deep.equal([true, true]);
+        expect(warnings.map(w => w.method)).to.deep.equal([
+          'Lightning.addInvoice',
+          'Lightning.subscribeInvoices',
+        ]);
       });
 
       it('rejects a missing request', async () => {
@@ -659,6 +738,42 @@ describe('strict mode validation', () => {
       () => sendPayment({ payment_request: 'lnbc1', amtt: undefined }),
       'amtt: unknown field (did you mean "amt"?)'
     );
+  });
+
+  it('checks a request without a client', () => {
+    sut.validate('0.20', 'Lightning.addInvoice', { value: 1000 });
+    sut.validate(undefined, 'Lightning.AddInvoice', { value: 1000 });
+    sut.validate('0.21.5-beta', 'addInvoice', { value: 1000 });
+    sut.validate('0.20', 'genSeed', {});
+    sut.validate('0.20', 'subscribeState', {});
+    let err = (() => {
+      try {
+        sut.validate('0.20', 'addInvoice', { valeu: 1000 });
+      } catch (e) {
+        return e;
+      }
+    })();
+    expect(err).to.be.instanceOf(sut.ValidationError);
+    expect(err.message).to.equal('lnrpc.Invoice.valeu: unknown field (did you mean "value"?)');
+    expect(err.method).to.equal('Lightning.addInvoice');
+    // For a bidirectional stream, a message written to it
+    rejects(
+      () => sut.validate('0.20', 'Router.htlcInterceptor', { action: 'ACCEPT' }),
+      'routerrpc.ForwardHtlcInterceptResponse.action: expected a value of'
+    );
+  });
+
+  it('checks a request of the method in the given line only', () => {
+    sut.validate('0.20', 'sendPaymentSync', { payment_request: 'lnbc1' });
+    expect(() => sut.validate('0.21', 'sendPaymentSync', {})).to.throw(
+      Error,
+      'Unknown method "sendPaymentSync" in LND 0.21'
+    );
+    expect(() => sut.validate('0.20', 'Lightning.noSuchMethod', {})).to.throw(
+      'Unknown method "Lightning.noSuchMethod" in LND 0.20'
+    );
+    expect(() => sut.validate('0.20', 'getinfo', {})).to.throw('Unknown method "getinfo"');
+    expect(() => sut.validate('0.17', 'getInfo', {})).to.throw('Unsupported lndVersion "0.17"');
   });
 
   it('does not take prototype names for fields', () => {

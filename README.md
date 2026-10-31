@@ -212,7 +212,19 @@ await client.addInvoice({ valeu: 1000 });
 // ValidationError: lnrpc.Invoice.valeu: unknown field (did you mean "value"?)
 ```
 
-Strict mode rejects unknown fields, values of the wrong type, integers out of the range of their field (numbers beyond 2^53 must be passed as decimal strings), `bytes` that are neither a `Buffer`/`Uint8Array` nor standard base64, unknown enum values, and more than one member of a `oneof`, in nested messages, arrays and maps too. The error tells where the problem is, e.g. `routerrpc.SendPaymentRequest.route_hints[0].hop_hints[0].fee_base_msat`. A unary call rejects with `lnd.ValidationError` (a `TypeError`), a streaming call throws, and each `write()` to a bidirectional stream is checked. Nothing is sent when a request is rejected. Responses are not checked.
+Strict mode rejects unknown fields, values of the wrong type, integers out of the range of their field (numbers beyond 2^53 must be passed as decimal strings), `bytes` that are neither a `Buffer`/`Uint8Array` nor standard base64, unknown enum values, and more than one member of a `oneof`, in nested messages, arrays and maps too. The error tells where the problem is, e.g. `routerrpc.SendPaymentRequest.route_hints[0].hop_hints[0].fee_base_msat`. A unary call rejects with `lnd.ValidationError` (a `TypeError`), a streaming call throws, and each `write()` to a bidirectional stream is checked. Nothing is sent when a request is rejected. Responses are not checked. The error tells the method as `error.method` (`'Lightning.addInvoice'`).
+
+To bring strict mode into existing code step by step, let it report instead of reject: with `strict: 'warn'` an invalid request is sent as without strict mode and the error is emitted as a process warning (printed to stderr, or caught with `process.on('warning')`); with a function the function gets the error, and the request is sent unless the function throws.
+
+```javascript
+let client = await lnd.connect({ strict: error => logger.warn(`${error.method}: ${error.message}`) });
+```
+
+`lnd.validate(lndVersion, method, request)` checks a request the same way without a client and without sending it. `method` is `'Service.method'` as on the client (`'Router.sendPaymentV2'`) or a method of the client itself (`'addInvoice'`):
+
+```javascript
+lnd.validate('0.21', 'Lightning.updateChannelPolicy', request); // throws lnd.ValidationError
+```
 
 ### 64-bit map keys
 
