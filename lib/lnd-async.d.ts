@@ -113,6 +113,13 @@ export const defaultLndVersion: DefaultLndVersion;
 export function resolveLndVersion(lndVersion?: string | null): LndVersion;
 
 /**
+ * The directory with the `.proto` files of the line that connect() uses for an `lndVersion`
+ * (`lightning.proto`, `routerrpc/router.proto`...), an absolute path. Use it instead of a path
+ * inside the package: the layout of `lib/` is not part of the API.
+ */
+export function protoDir(lndVersion?: string | null): string;
+
+/**
  * Checks a request as strict mode does, without sending it, and throws {@link ValidationError}
  * when it is not valid. `lndVersion` is taken as by connect(). `method` is `'Service.method'` as
  * on the client (`'Lightning.addInvoice'`; the rpc name `'Lightning.AddInvoice'` works too) or a

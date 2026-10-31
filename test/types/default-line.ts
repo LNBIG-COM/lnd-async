@@ -1,6 +1,6 @@
 // Compile-only checks of the declarations for the default LND line (`tsc -p test/types`).
 // Lines marked @ts-expect-error must fail to compile; the rest must compile.
-import { connect, defaultLndVersion, supportedLndVersions, validate, ValidationError } from '../../lib/lnd-async';
+import { connect, defaultLndVersion, protoDir, supportedLndVersions, validate, ValidationError } from '../../lib/lnd-async';
 import type { ConnectOptions, LndClient, lnrpc, Lnd0_20, routerrpc } from '../../lib/lnd-async';
 
 type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
@@ -141,6 +141,8 @@ async function connectOptions() {
 function runtimeExports(error: unknown) {
   expectType<Equal<typeof defaultLndVersion, '0.20'>>();
   expectType<Equal<ReturnType<typeof validate>, void>>();
+  const dir: string = protoDir('0.21') + protoDir();
+  void dir;
   validate('0.21', 'Lightning.addInvoice', { value: 1000 });
   validate(undefined, 'addInvoice', JSON.parse('{}'));
   // @ts-expect-error the method is required

@@ -559,6 +559,23 @@ describe('lnd-async client surface', () => {
     );
   });
 
+  it('gives the directory of the protos of a line', () => {
+    let fs = require('fs');
+    let path = require('path');
+    let lightning = lndVersion =>
+      fs.readFileSync(path.join(sut.protoDir(lndVersion), 'lightning.proto'), 'utf8');
+    expect(path.isAbsolute(sut.protoDir('0.21'))).to.equal(true);
+    expect(lightning('0.21.5-beta')).to.contain('rpc SendOnionMessage');
+    expect(lightning('0.20')).to.not.contain('rpc SendOnionMessage');
+    expect(sut.protoDir()).to.equal(sut.protoDir('0.20'));
+    for (let lndVersion of sut.supportedLndVersions) {
+      expect(fs.existsSync(path.join(sut.protoDir(lndVersion), 'routerrpc/router.proto'))).to.equal(
+        true
+      );
+    }
+    expect(() => sut.protoDir('0.17')).to.throw('Unsupported lndVersion "0.17"');
+  });
+
   it('rejects an unsupported lndVersion', async () => {
     let err = await sut.connect({ ...base, lndVersion: '0.17' }).then(
       () => null,

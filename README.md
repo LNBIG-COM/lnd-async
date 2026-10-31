@@ -171,6 +171,8 @@ let { version } = await client.getInfo({});
 if (lnd.resolveLndVersion(version) !== client.lndVersion) console.warn(`LND ${version}, protos of ${client.lndVersion}`);
 ```
 
+`lnd.protoDir(lndVersion)` is the directory with the `.proto` files of a line, for code that loads them itself (a test that encodes a request, a tool). Do not use a path inside the package: `lib/original-lnd-protos` holds the protos of the default line 0.20, not the ones of a client made with `lndVersion: '0.21'`.
+
 Use the line of your node. Protobuf messages are compatible across versions, but an RPC the node does not have fails with `UNIMPLEMENTED`, and a request field the bundled protos do not know is dropped without an error. So is a response field: on LND 0.21 with the line 0.20 the `CHANNEL_UPDATE` events of `subscribeChannelEvents` come as `{ type: 7 }`, without their `updated_channel`. An enum value the protos of the line do not have comes as its number (7 here), not as a name.
 
 ### TypeScript
