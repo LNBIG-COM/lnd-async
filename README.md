@@ -197,7 +197,7 @@ client.subscribeInvoices({}).on('data', (invoice: lnrpc.Invoice__Output) => invo
 - The client type follows the options: `connect({ lndVersion: '0.21' })` has no `sendPaymentSync`, `connect({ longsAsNumbers: true })` returns 64-bit integers as `number`.
 - The message types of the default line are exported as `lnrpc`, `routerrpc`, `invoicesrpc` and so on, the ones of every line as `Lnd0_18`, `Lnd0_19`, `Lnd0_20`, `Lnd0_21` (`Lnd0_21.lnrpc.Invoice__Output`).
 - Responses of streams are typed in `data` events and in `for await`.
-- `double` and `float` request fields accept numbers only, although protobufjs would also convert a string.
+- `double` and `float` request fields accept numbers only, although protobufjs would also convert a string. So do 32-bit integer fields, although a decimal string is sent exactly and passes strict mode.
 - TypeScript 4.7 or newer is required (checked with 4.7, 5.0, 5.9 and 7.0).
 
 TypeScript checks object literals written in the code. Requests built from JSON or a configuration file are checked only at runtime, in strict mode.
@@ -212,7 +212,7 @@ await client.addInvoice({ valeu: 1000 });
 // ValidationError: lnrpc.Invoice.valeu: unknown field (did you mean "value"?)
 ```
 
-Strict mode rejects unknown fields, values of the wrong type, integers out of the range of their field (numbers beyond 2^53 must be passed as decimal strings), `bytes` that are neither a `Buffer`/`Uint8Array` nor standard base64, unknown enum values, and more than one member of a `oneof`, in nested messages, arrays and maps too. The error tells where the problem is, e.g. `routerrpc.SendPaymentRequest.route_hints[0].hop_hints[0].fee_base_msat`. A unary call rejects with `lnd.ValidationError` (a `TypeError`), a streaming call throws, and each `write()` to a bidirectional stream is checked. Nothing is sent when a request is rejected. Responses are not checked. The error tells the method as `error.method` (`'Lightning.addInvoice'`).
+Strict mode rejects unknown fields, values of the wrong type, integers out of the range of their field (an integer is a number or a decimal string, a 64-bit one also a `Long`; numbers beyond 2^53 must be passed as decimal strings), `bytes` that are neither a `Buffer`/`Uint8Array` nor standard base64, unknown enum values, and more than one member of a `oneof`, in nested messages, arrays and maps too. The error tells where the problem is, e.g. `routerrpc.SendPaymentRequest.route_hints[0].hop_hints[0].fee_base_msat`. A unary call rejects with `lnd.ValidationError` (a `TypeError`), a streaming call throws, and each `write()` to a bidirectional stream is checked. Nothing is sent when a request is rejected. Responses are not checked. The error tells the method as `error.method` (`'Lightning.addInvoice'`).
 
 To bring strict mode into existing code step by step, let it report instead of reject: with `strict: 'warn'` an invalid request is sent as without strict mode and the error is emitted as a process warning (printed to stderr, or caught with `process.on('warning')`); with a function the function gets the error, and the request is sent unless the function throws.
 

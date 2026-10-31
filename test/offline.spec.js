@@ -620,6 +620,41 @@ describe('strict mode validation', () => {
     );
   });
 
+  it('accepts decimal strings in 32-bit integer fields, which protobufjs encodes exactly', async () => {
+    updatePolicy({
+      global: true,
+      fee_rate_ppm: '2059',
+      base_fee_msat: '1000',
+      min_htlc_msat: '1000',
+      time_lock_delta: '40',
+    });
+    sendPayment({ final_cltv_delta: '-2147483648', max_parts: '4294967295', cltv_limit: '007' });
+    let client = await sut.connect({ lndPort: 1, noCert: true, noMacaroons: true });
+    let service = client.lnrpc.allServices.Lightning.constructor.service;
+    let { requestSerialize } = service.UpdateChannelPolicy;
+    expect(
+      requestSerialize({ global: true, fee_rate_ppm: '2059', time_lock_delta: '40' })
+    ).to.deep.equal(requestSerialize({ global: true, fee_rate_ppm: 2059, time_lock_delta: 40 }));
+    let expected =
+      'expected an integer from 0 to 4294967295 (uint32) as a number or a decimal string';
+    rejects(
+      () => updatePolicy({ fee_rate_ppm: '4294967296' }),
+      `fee_rate_ppm: ${expected}, got the string "4294967296"`
+    );
+    rejects(() => updatePolicy({ fee_rate_ppm: '-1' }), `fee_rate_ppm: ${expected}`);
+    for (let bad of ['1e3', '0x10', ' 40', '40.0', '', '+40', '1'.repeat(400)]) {
+      rejects(() => updatePolicy({ time_lock_delta: bad }), `time_lock_delta: ${expected}`);
+    }
+    // What protobufjs would send instead
+    expect(requestSerialize({ fee_rate_ppm: '4294967296' })).to.deep.equal(
+      requestSerialize({ fee_rate_ppm: 0 })
+    );
+    rejects(
+      () => sendPayment({ final_cltv_delta: '2147483648' }),
+      'final_cltv_delta: expected an integer from -2147483648 to 2147483647 (int32) as a number or a decimal string'
+    );
+  });
+
   it('checks strings, booleans, doubles and bytes', () => {
     rejects(
       () => sendPayment({ payment_request: 42 }),
